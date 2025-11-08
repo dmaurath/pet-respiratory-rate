@@ -6,9 +6,7 @@
   <title>Pet Respiratory Tracker</title>
   <meta name="description" content="Tap to count breaths, save BPM readings, visualize trends, and see MoM/YoY stats. Works offline as a PWA.">
   <style>
-    :root{
-      --bg:#0b1020; --panel:#0f172a; --muted:#94a3b8; --text:#e5e7eb; --accent:#ef4444; --accent-2:#fca5a5;
-    }
+    :root{ --bg:#0b1020; --panel:#0f172a; --muted:#94a3b8; --text:#e5e7eb; --accent:#ef4444; --accent-2:#fca5a5; }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Inter,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;align-items:center;justify-content:center;padding:16px}
@@ -50,7 +48,7 @@
 </head>
 <body>
   <div class="app">
-    <div id="fail">Script error detected. Running in safe mode without charts/service worker. You can still record and export readings.</div>
+    <div id="fail">Script error detected. Running in safe mode without charts. You can still record and export readings.</div>
     <header>
       <div>
         <div class="title">Pet Respiratory Tracker</div>
@@ -124,60 +122,67 @@
 
   <!-- CDN with error handlers -->
   <script>
-    function markFail(msg){
-      const f=document.getElementById('fail'); f.style.display='block'; if(msg) f.textContent = 'Safe mode: '+msg;
-    }
+    function markFail(msg){ const f=document.getElementById('fail'); f.style.display='block'; if(msg) f.textContent='Safe mode: '+msg; }
   </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer onerror="markFail('Chart library failed to load. Charts disabled.');"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0" defer onerror="markFail('Date adapter failed to load. Charts disabled.');"></script>
 
   <script>
-    // Wrap everything to avoid hard failure
     (function(){
       try{
         const STORE_KEY='pet_resp_readings_v1';
-        const load=()=>{try{return JSON.parse(localStorage.getItem(STORE_KEY))||[]}catch{return[]}};
-        const save=(a)=>localStorage.setItem(STORE_KEY,JSON.stringify(a));
-        let readings=load();
+        const load=function(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY))||[] } catch(e){ return [] } };
+        const save=function(a){ localStorage.setItem(STORE_KEY, JSON.stringify(a)); };
+        var readings = load();
 
-        let ticking=false,startTime=0,timerId=null,elapsed=0,count=0,sessLen=60;
-        const el=(id)=>document.getElementById(id);
-        const heart=el('heart'),startBtn=el('startBtn'),stopBtn=el('stopBtn'),statusEl=el('status');
-        const countEl=el('breathCount'),elapsedEl=el('elapsed'),bpmLiveEl=el('bpmLive');
-        const rangeSel=el('rangeSelect');
-        const latestBpm=el('latestBpm'),latestWhen=el('latestWhen'),mom=el('mom'),momDelta=el('momDelta'),momBase=el('momBase');
-        const yoy=el('yoy'),yoyDelta=el('yoyDelta'),yoyBase=el('yoyBase'),countRange=el('countRange'),rangeSpan=el('rangeSpan');
-        const exportBtn=el('exportBtn'),importBtn=el('importBtn'),importFile=el('importFile'),clearBtn=el('clearBtn');
-        const logBody=document.querySelector('#logTable tbody');
+        var ticking=false, startTime=0, timerId=null, elapsed=0, count=0, sessLen=60;
+        var el=function(id){ return document.getElementById(id); };
+        var heart=el('heart'), startBtn=el('startBtn'), stopBtn=el('stopBtn'), statusEl=el('status');
+        var countEl=el('breathCount'), elapsedEl=el('elapsed'), bpmLiveEl=el('bpmLive');
+        var rangeSel=el('rangeSelect');
+        var latestBpm=el('latestBpm'), latestWhen=el('latestWhen'), mom=el('mom'), momDelta=el('momDelta'), momBase=el('momBase');
+        var yoy=el('yoy'), yoyDelta=el('yoyDelta'), yoyBase=el('yoyBase'), countRange=el('countRange'), rangeSpan=el('rangeSpan');
+        var exportBtn=el('exportBtn'), importBtn=el('importBtn'), importFile=el('importFile'), clearBtn=el('clearBtn');
+        var logBody=document.querySelector('#logTable tbody');
 
-        function resetSessionUI(){count=0;elapsed=0;countEl.textContent='0';elapsedEl.textContent='0.0s';bpmLiveEl.textContent='0'}
-        function updateLive(){elapsed=(Date.now()-startTime)/1000; const bpm=count*(60/Math.max(elapsed,0.1)); elapsedEl.textContent=`${elapsed.toFixed(1)}s`; bpmLiveEl.textContent=Math.round(bpm)}
-        function startSession(){if(ticking)return; sessLen=parseInt(document.getElementById('sessionLen').value,10); resetSessionUI(); ticking=true; startTime=Date.now(); statusEl.textContent=`Counting… (${sessLen}s)`; startBtn.disabled=true; stopBtn.disabled=false; timerId=setInterval(()=>{updateLive(); if(elapsed>=sessLen) stopAndSave();},100)}
-        function stopAndSave(){if(!ticking)return; clearInterval(timerId); ticking=false; startBtn.disabled=false; stopBtn.disabled=true; const duration=Math.max(elapsed,0.1); const bpm=Math.round(count*(60/duration)); const entry={ts:Date.now(),bpm}; readings.push(entry); save(readings); statusEl.textContent=`Saved ${bpm} BPM`; rebuild()}
-        heart.addEventListener('click',()=>{if(!ticking)return; count++; countEl.textContent=String(count)});
-        startBtn.addEventListener('click',startSession); stopBtn.addEventListener('click',stopAndSave);
+        function resetSessionUI(){ count=0; elapsed=0; countEl.textContent='0'; elapsedEl.textContent='0.0s'; bpmLiveEl.textContent='0'; }
+        function updateLive(){ elapsed=(Date.now()-startTime)/1000; var bpm=count*(60/Math.max(elapsed,0.1)); elapsedEl.textContent=elapsed.toFixed(1)+'s'; bpmLiveEl.textContent=String(Math.round(bpm)); }
+        function startSession(){ if(ticking) return; sessLen=parseInt(document.getElementById('sessionLen').value,10); resetSessionUI(); ticking=true; startTime=Date.now(); statusEl.textContent='Counting… ('+sessLen+'s)'; startBtn.disabled=true; stopBtn.disabled=false; timerId=setInterval(function(){ updateLive(); if(elapsed>=sessLen) stopAndSave(); }, 100); }
+        function stopAndSave(){ if(!ticking) return; clearInterval(timerId); ticking=false; startBtn.disabled=false; stopBtn.disabled=true; var duration=Math.max(elapsed,0.1); var bpm=Math.round(count*(60/duration)); var entry={ ts:Date.now(), bpm:bpm }; readings.push(entry); save(readings); statusEl.textContent='Saved '+bpm+' BPM'; rebuild(); }
+        heart.addEventListener('click', function(){ if(!ticking) return; count++; countEl.textContent=String(count); });
+        startBtn.addEventListener('click', startSession);
+        stopBtn.addEventListener('click', stopAndSave);
 
-        // Chart (optional)
-        let chart=null; const ctx=document.getElementById('chart').getContext('2d');
+        // Chart (lazy & guarded)
+        var chart=null; var ctx=null; var canvasEl=document.getElementById('chart');
+        if(canvasEl && canvasEl.getContext){ ctx = canvasEl.getContext('2d'); }
         function ensureChart(){
-          if(window.Chart && !chart){ chart=new Chart(ctx,{type:'line',data:{datasets:[{label:'BPM',data:[],tension:.25,pointRadius:2,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{type:'time',time:{unit:'day'},grid:{color:'#1f2a44'},ticks:{color:'#9ca3af'}},y:{beginAtZero:false,grid:{color:'#1f2a44'},ticks:{color:'#9ca3af'}}},plugins:{legend:{display:false}}}); }
+          if(!ctx || typeof window.Chart==='undefined' || chart){ return; }
+          chart=new Chart(ctx,{type:'line',data:{datasets:[{label:'BPM',data:[],tension:0.25,pointRadius:2,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{type:'time',time:{unit:'day'}},y:{beginAtZero:false}},plugins:{legend:{display:false}}});
         }
-        function rangeStart(range){const now=new Date(); const map={week:7,month:30,'3m':90,'6m':180,'1y':365,all:0}; if(range==='all')return new Date(0); return new Date(now.getTime()-map[range]*24*3600*1000)}
-        function updateChart(){ ensureChart(); if(!chart){ return; } const range=rangeSel.value; const start=rangeStart(range); const filtered=readings.filter(r=>new Date(r.ts)>=start).sort((a,b)=>a.ts-b.ts); chart.data.datasets[0].data=filtered.map(r=>({x:r.ts,y:r.bpm})); chart.update(); countRange.textContent=String(filtered.length); const first=filtered[0]?.ts; const last=filtered.at(-1)?.ts; rangeSpan.textContent=filtered.length?`${fmtDate(first)} → ${fmtDate(last)}`:'—'}
-        function fmtDate(ts){const d=new Date(ts); return d.toLocaleString([], {year:'numeric', month:'short', day:'2-digit'})}
-        function fmtTime(ts){const d=new Date(ts); return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
-        function updateStats(){ if(readings.length===0){ latestBpm.textContent='—'; latestWhen.textContent='No readings yet'; mom.textContent='—'; momDelta.textContent=''; momBase.textContent='—'; yoy.textContent='—'; yoyDelta.textContent=''; yoyBase.textContent='—'; return; } const last=readings.at(-1); latestBpm.textContent=`${last.bpm}`; latestWhen.textContent=`${fmtDate(last.ts)} ${fmtTime(last.ts)}`; const d=new Date(last.ts); const curM=d.getMonth(),curY=d.getFullYear(); const prevM=(curM+11)%12,prevY=curM===0?curY-1:curY; const sel=(y,m)=>readings.filter(r=>{const t=new Date(r.ts);return t.getFullYear()===y&&t.getMonth()===m}); const avg=a=>a.length?(a.reduce((s,r)=>s+r.bpm,0)/a.length):null; const curA=sel(curY,curM),prevA=sel(prevY,prevM); const curAvg=avg(curA),prevAvg=avg(prevA); if(curAvg!=null&&prevAvg!=null){ mom.textContent=`${curAvg.toFixed(1)} BPM`; const delta=curAvg-prevAvg; const pct=(delta/prevAvg)*100; momDelta.textContent=`${delta>=0?'+':''}${delta.toFixed(1)} (${pct>=0?'+':''}${pct.toFixed(1)}%)`; momDelta.className='delta ' + (delta>=0?'pos':'neg'); momBase.textContent=`Prev month avg: ${prevAvg.toFixed(1)} BPM`; } else { mom.textContent='—'; momDelta.textContent=''; momBase.textContent='Need current & previous month data'; }
-          const lastY=curY-1; const same=avg(sel(lastY,curM)); if(curAvg!=null&&same!=null){ yoy.textContent=`${curAvg.toFixed(1)} BPM`; const delta=curAvg-same; const pct=(delta/same)*100; yoyDelta.textContent=`${delta>=0?'+':''}${delta.toFixed(1)} (${pct>=0?'+':''}${pct.toFixed(1)}%)`; yoyDelta.className='delta ' + (delta>=0?'pos':'neg'); yoyBase.textContent=`Same month last year avg: ${same.toFixed(1)} BPM`; } else { yoy.textContent='—'; yoyDelta.textContent=''; yoyBase.textContent='Need this month & same month last year'; }
+        // Retry until Chart.js arrives (because it is deferred)
+        var chartWait = setInterval(function(){ if(typeof window.Chart!=='undefined'){ ensureChart(); updateChart(); clearInterval(chartWait); } }, 300);
+
+        function rangeStart(range){ var now=new Date(); var days={week:7,month:30,'3m':90,'6m':180,'1y':365,all:0}; if(range==='all') return new Date(0); return new Date(now.getTime()-days[range]*24*3600*1000); }
+        function updateChart(){ ensureChart(); if(!chart){ return; } var range=rangeSel.value; var start=rangeStart(range); var filtered=readings.filter(function(r){ return new Date(r.ts) >= start; }).sort(function(a,b){return a.ts-b.ts}); chart.data.datasets[0].data=filtered.map(function(r){ return {x:r.ts, y:r.bpm}; }); chart.update(); countRange.textContent=String(filtered.length); var first = filtered.length ? filtered[0].ts : undefined; var last = filtered.length ? filtered[filtered.length-1].ts : undefined; rangeSpan.textContent = filtered.length ? (fmtDate(first)+' → '+fmtDate(last)) : '—'; }
+        function fmtDate(ts){ var d=new Date(ts); return d.toLocaleString([], {year:'numeric', month:'short', day:'2-digit'}); }
+        function fmtTime(ts){ var d=new Date(ts); return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
+        function updateStats(){ if(readings.length===0){ latestBpm.textContent='—'; latestWhen.textContent='No readings yet'; mom.textContent='—'; momDelta.textContent=''; momBase.textContent='—'; yoy.textContent='—'; yoyDelta.textContent=''; yoyBase.textContent='—'; return; } var last = readings[readings.length-1]; latestBpm.textContent=String(last.bpm); latestWhen.textContent=fmtDate(last.ts)+' '+fmtTime(last.ts); var d=new Date(last.ts); var curM=d.getMonth(), curY=d.getFullYear(); var prevM=(curM+11)%12, prevY=(curM===0)?(curY-1):curY; var sel=function(y,m){ return readings.filter(function(r){ var t=new Date(r.ts); return t.getFullYear()===y && t.getMonth()===m; }); }; var avg=function(a){ return a.length ? (a.reduce(function(s,r){return s+r.bpm},0)/a.length) : null; }; var curA=sel(curY,curM), prevA=sel(prevY,prevM); var curAvg=avg(curA), prevAvg=avg(prevA); if(curAvg!=null && prevAvg!=null){ mom.textContent=curAvg.toFixed(1)+' BPM'; var delta=curAvg-prevAvg; var pct=(delta/prevAvg)*100; momDelta.textContent=(delta>=0?'+':'')+delta.toFixed(1)+' ('+(pct>=0?'+':'')+pct.toFixed(1)+'%)'; momDelta.className='delta ' + (delta>=0?'pos':'neg'); momBase.textContent='Prev month avg: '+prevAvg.toFixed(1)+' BPM'; } else { mom.textContent='—'; momDelta.textContent=''; momBase.textContent='Need current & previous month data'; }
+          var lastY=curY-1; var same=avg(sel(lastY,curM)); if(curAvg!=null && same!=null){ yoy.textContent=curAvg.toFixed(1)+' BPM'; var d2=curAvg-same; var p2=(d2/same)*100; yoyDelta.textContent=(d2>=0?'+':'')+d2.toFixed(1)+' ('+(p2>=0?'+':'')+p2.toFixed(1)+'%)'; yoyDelta.className='delta ' + (d2>=0?'pos':'neg'); yoyBase.textContent='Same month last year avg: '+same.toFixed(1)+' BPM'; } else { yoy.textContent='—'; yoyDelta.textContent=''; yoyBase.textContent='Need this month & same month last year'; }
         }
-        function renderLog(){ logBody.innerHTML=''; const clone=[...readings].sort((a,b)=>b.ts-a.ts); for(const r of clone){ const tr=document.createElement('tr'); tr.innerHTML=`<td>${fmtDate(r.ts)}</td><td>${fmtTime(r.ts)}</td><td><strong>${r.bpm}</strong></td><td><button class="secondary" data-ts="${r.ts}">Delete</button></td>`; logBody.appendChild(tr);} logBody.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',e=>{const ts=Number(e.currentTarget.getAttribute('data-ts')); readings=readings.filter(r=>r.ts!==ts); save(readings); rebuild();})) }
+        function renderLog(){ logBody.innerHTML=''; var clone = readings.slice().sort(function(a,b){return b.ts-a.ts}); for(var i=0;i<clone.length;i++){ var r=clone[i]; var tr=document.createElement('tr'); tr.innerHTML='<td>'+fmtDate(r.ts)+'</td><td>'+fmtTime(r.ts)+'</td><td><strong>'+r.bpm+'</strong></td><td><button class="secondary" data-ts="'+r.ts+'">Delete</button></td>'; logBody.appendChild(tr); }
+          var btns = logBody.querySelectorAll('button'); for(var j=0;j<btns.length;j++){ btns[j].addEventListener('click', function(e){ var ts = Number(e.currentTarget.getAttribute('data-ts')); readings = readings.filter(function(r){ return r.ts!==ts; }); save(readings); rebuild(); }); }
+        }
         function rebuild(){ updateChart(); updateStats(); renderLog(); }
 
         // Import/Export/Clear
-        exportBtn.addEventListener('click',()=>{ const blob=new Blob([JSON.stringify(readings,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='pet-respiratory-readings.json'; a.click(); URL.revokeObjectURL(a.href); });
-        importBtn.addEventListener('click',()=>importFile.click());
-        importFile.addEventListener('change',async(e)=>{const file=e.target.files?.[0]; if(!file)return; const text=await file.text(); try{const data=JSON.parse(text); if(Array.isArray(data)&&data.every(x=>typeof x.ts==='number'&&typeof x.bpm==='number')){ readings=data.sort((a,b)=>a.ts-b.ts); save(readings); rebuild(); } else alert('Invalid file format.'); }catch{ alert('Could not parse file.'); } importFile.value=''; });
-        clearBtn.addEventListener('click',()=>{ if(confirm('Delete all readings on this device?')){ readings=[]; save(readings); rebuild(); }});
-        rangeSel.addEventListener('change',updateChart);
+        exportBtn.addEventListener('click', function(){ var blob=new Blob([JSON.stringify(readings,null,2)], {type:'application/json'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='pet-respiratory-readings.json'; a.click(); URL.revokeObjectURL(a.href); });
+        importBtn.addEventListener('click', function(){ importFile.click(); });
+        importFile.addEventListener('change', function(e){ var file = (e.target.files && e.target.files[0]) ? e.target.files[0] : null; if(!file) return; var fr=new FileReader(); fr.onload=function(){ try{ var data=JSON.parse(fr.result); if(Array.isArray(data) && data.every(function(x){ return typeof x.ts==='number' && typeof x.bpm==='number'; })){ readings=data.sort(function(a,b){return a.ts-b.ts}); save(readings); rebuild(); } else { alert('Invalid file format.'); } } catch(err){ alert('Could not parse file.'); } importFile.value=''; }; fr.readAsText(file); });
+        clearBtn.addEventListener('click', function(){ if(confirm('Delete all readings on this device?')){ readings=[]; save(readings); rebuild(); } });
+        rangeSel.addEventListener('change', updateChart);
+
+        // Initial build
         rebuild();
       }catch(e){ console.error(e); markFail(e.message); }
     })();
