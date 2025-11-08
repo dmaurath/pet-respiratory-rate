@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Pet Respiratory Tracker — iOS Safe Area + Post-Session Charts</title>
   <style>
-    :root{ --bg:#0b1020; --panel:#0f172a; --muted:#94a3b8; --text:#e5e7eb; --accent:#ef4444; --accent-2:#fca5a5; --grid:#1f2a44; }
+    :root{ --bg:#0b1020; --panel:#0f172a; --muted:#94a3b8; --text:#e5e7eb; --accent:#ef4444; --accent-2:#fca5a5; --grid:#1f2a44; --note:#0f1c36; --note-border:#27406f; }
     *{ box-sizing:border-box }
     html, body { min-height:100svh; height:auto; }
     body{
@@ -25,6 +25,25 @@
       padding:16px;
       min-height: calc(100svh - max(16px, env(safe-area-inset-top)) - 16px);
     }
+
+    /* Instruction banner */
+    .instructions{
+      display:flex; gap:12px; align-items:flex-start;
+      background:var(--note);
+      border:1px solid var(--note-border);
+      border-radius:14px;
+      padding:12px 14px;
+      margin-bottom:14px;
+    }
+    .instructions .icon{
+      width:28px; height:28px; border-radius:999px;
+      background:radial-gradient(120px 140px at 30% 20%, var(--accent-2), var(--accent));
+      box-shadow:0 0 0 2px #ffffff22;
+      flex:0 0 28px;
+    }
+    .instructions .text{ font-size:14px; line-height:1.4 }
+    .instructions .text strong{ font-size:15px }
+
     header{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;justify-content:space-between}
     .title{font-size:22px;font-weight:700}
     .sub{color:var(--muted);font-size:13px}
@@ -38,11 +57,25 @@
     button.primary{background:linear-gradient(180deg,#ef4444,#c02626);border:0;box-shadow:0 10px 24px #ef444433}
     button.primary:active{transform:translateY(1px)}
     button.secondary{background:#0a1022}
+
     .heart-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
-    .heart{position:relative;width:140px;height:125px;cursor:pointer;transition:transform .06s ease}
+    .heart{
+      position:relative;width:140px;height:125px;cursor:pointer;transition:transform .06s ease;
+      filter: drop-shadow(0 6px 14px rgba(239,68,68,.25));
+    }
     .heart:active{transform:scale(0.98)}
-    .heart::before,.heart::after{content:"";position:absolute;left:70px;top:0;width:70px;height:110px;background:radial-gradient(120px 140px at 30% 20%, var(--accent-2), var(--accent));border-radius:70px 70px 0 0;transform:rotate(-45deg);transform-origin:0 100%;box-shadow:inset 0 0 0 2px #ffffff22}
+    .heart::before,.heart::after{
+      content:"";position:absolute;left:70px;top:0;width:70px;height:110px;
+      background:radial-gradient(120px 140px at 30% 20%, var(--accent-2), var(--accent));
+      border-radius:70px 70px 0 0;transform:rotate(-45deg);transform-origin:0 100%;
+      box-shadow:inset 0 0 0 2px #ffffff22
+    }
     .heart::after{left:0;transform:rotate(45deg);transform-origin:100% 100%}
+
+    /* Subtle tap animation */
+    @keyframes pulse { 0%{transform:scale(1)} 40%{transform:scale(1.06)} 100%{transform:scale(1)} }
+    .heart.pulse{ animation: pulse .28s ease }
+
     .counter{font-variant-numeric:tabular-nums;font-size:16px;color:#f3f4f6;background:#0a1022;padding:8px 12px;border-radius:999px;border:1px solid var(--grid);display:flex;gap:10px;align-items:center}
     .badge{font-size:12px;color:#9CA3AF;background:#0a1022;padding:6px 10px;border:1px solid var(--grid);border-radius:999px}
     .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
@@ -58,10 +91,19 @@
     .footer button{font-size:12px;padding:6px 8px}
     #debug{margin:10px 0 0;color:#fbbf24;font-size:12px}
     canvas#chart{width:100%;height:220px;display:block;background:#091126;border-radius:12px;border:1px solid var(--grid)}
+    .small-note{font-size:12px;color:#94a3b8;margin-top:6px}
   </style>
 </head>
 <body>
   <div class="app">
+    <!-- Prominent instructions -->
+    <div class="instructions" role="status" aria-live="polite">
+      <div class="icon" aria-hidden="true"></div>
+      <div class="text">
+        <strong>How to record a reading:</strong> Tap <em>Start Session</em>, then tap the heart <em>once per breath</em>. When the timer finishes (or you tap <em>Stop &amp; Save</em>), a BPM reading is saved. Use <em>Export</em> to back up your history.
+      </div>
+    </div>
+
     <header>
       <div>
         <div class="title">Pet Respiratory Tracker</div>
@@ -106,6 +148,7 @@
             <span>BPM (live): <strong id="bpmLive">0</strong></span>
           </div>
           <div id="debug"></div>
+          <div class="small-note">Tip: 60s sessions give the most consistent BPM.</div>
         </div>
         <hr style="border-color:#141b33; margin:16px 0"/>
         <h3>Trend</h3>
@@ -129,7 +172,7 @@
     </div>
 
     <div class="footer">
-      <span>Tip: Aim for 60s sessions for consistent BPM.</span>
+      <span>Use Export regularly to back up your data.</span>
       <button id="clearBtn" class="secondary" style="margin-left:auto">Clear All Data</button>
     </div>
   </div>
@@ -208,8 +251,15 @@
           log('Saved '+bpm+' BPM');
         }
 
-        // Clicks
-        heart.addEventListener('click', function(){ if(!ticking) return; count++; countEl.textContent=String(count); });
+        // Clicks + subtle pulse
+        heart.addEventListener('click', function(){
+          if(!ticking) return;
+          count++; countEl.textContent=String(count);
+          heart.classList.remove('pulse');
+          // force reflow to restart animation
+          void heart.offsetWidth;
+          heart.classList.add('pulse');
+        });
         startBtn.addEventListener('click', startSession);
         stopBtn.addEventListener('click', stopAndSave);
 
@@ -286,7 +336,7 @@
           } else { yoy.textContent='—'; yoyDelta.textContent=''; yoyBase.textContent='Need this month & same month last year'; }
         }
 
-        // Chart (draw only after rebuild)
+        // Chart (post-session only) — safe for 0 or 1 reading
         function drawChart(){
           try{
             ctx = resizeCanvas(); if(!ctx) return;
@@ -308,7 +358,10 @@
 
             var data = getFiltered().sort(function(a,b){return a.ts-b.ts});
             ctx.fillStyle='#94a3b8'; ctx.font='12px system-ui';
-            if(data.length===0){ ctx.fillText('No data in selected range', padL+8, padT+16); return; }
+            if(data.length===0){
+              ctx.fillText('No data in selected range', padL+8, padT+16);
+              return;
+            }
 
             // x scale
             var t0=data[0].ts, t1=data[data.length-1].ts; if(t1===t0){ t1=t0+1000; }
@@ -321,9 +374,25 @@
 
             // y labels
             for(var i=0;i<=4;i++){ var vy=min+(i*(max-min)/4); var y=yOf(vy); ctx.fillText(Math.round(vy), 8, y+4); }
-            // x labels
+
+            if(data.length===1){
+              // Single point: draw point + label, skip ticks that index into [1..n-1]
+              var px=xOf(data[0].ts), py=yOf(data[0].bpm);
+              ctx.fillText(new Date(data[0].ts).toLocaleDateString(undefined,{month:'short',day:'numeric'}), px-18, h-6);
+              ctx.fillStyle='#fca5a5'; ctx.beginPath(); ctx.arc(px,py,3,0,Math.PI*2); ctx.fill();
+              ctx.strokeStyle='#ef4444'; ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,py); ctx.stroke();
+              ctx.fillStyle='#9ca3af'; ctx.fillText('Only one reading—add more for a trend', padL+8, padT+32);
+              return;
+            }
+
+            // x labels for 2+ points
             var tickCount=Math.min(6, data.length);
-            for(var j=0;j<tickCount;j++){ var idx=Math.round(j*(data.length-1)/(tickCount-1)); var ts=data[idx].ts; var x=xOf(ts); var dd=new Date(ts).toLocaleDateString(undefined,{month:'short',day:'numeric'}); ctx.fillText(dd, x-18, h-6); }
+            for(var j=0;j<tickCount;j++){
+              var idx=Math.round(j*(data.length-1)/(tickCount-1));
+              var ts=data[idx].ts; var x=xOf(ts);
+              var dd=new Date(ts).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+              ctx.fillText(dd, x-18, h-6);
+            }
 
             // line
             ctx.strokeStyle = '#ef4444'; ctx.lineWidth=2; ctx.beginPath();
