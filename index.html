@@ -3,22 +3,27 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pet Respiratory Tracker — Minimal</title>
+  <title>Pet Respiratory Tracker</title>
+  <meta name="description" content="Tap to count breaths, save BPM readings, visualize trends, and see MoM/YoY stats. Works offline as a PWA.">
   <style>
     :root{ --bg:#0b1020; --panel:#0f172a; --muted:#94a3b8; --text:#e5e7eb; --accent:#ef4444; --accent-2:#fca5a5; }
-    *{box-sizing:border-box} html,body{height:100%}
+    *{box-sizing:border-box}
+    html,body{height:100%}
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Inter,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;align-items:center;justify-content:center;padding:16px}
     .app{width:min(980px,100%);min-height:80vh;border-radius:20px;background:var(--panel);box-shadow:0 20px 60px #0008,inset 0 0 0 1px #ffffff12;padding:20px;border:1px solid #ffffff18}
     header{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;justify-content:space-between}
-    .title{font-size:22px;font-weight:700} .sub{color:var(--muted);font-size:13px}
+    .title{font-size:22px;font-weight:700}
+    .sub{color:var(--muted);font-size:13px}
     .grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-top:16px}
     @media (max-width:900px){.grid{grid-template-columns:1fr}}
     .card{background:#0b1225;border-radius:16px;padding:16px;border:1px solid #1b2340}
     .card h3{margin:0 0 10px 0;font-size:16px}
     .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    select,button,.pill{background:#0a1022;border:1px solid #223;color:#e5e7eb;padding:10px 12px;border-radius:12px;font-size:14px}
-    button{cursor:pointer} button.primary{background:linear-gradient(180deg,#ef4444,#c02626);border:0;box-shadow:0 10px 24px #ef444433}
-    button.primary:active{transform:translateY(1px)} button.secondary{background:#0a1022}
+    select,button,input[type="number"],.pill{background:#0a1022;border:1px solid #223;color:#e5e7eb;padding:10px 12px;border-radius:12px;font-size:14px}
+    button{cursor:pointer}
+    button.primary{background:linear-gradient(180deg,#ef4444,#c02626);border:0;box-shadow:0 10px 24px #ef444433}
+    button.primary:active{transform:translateY(1px)}
+    button.secondary{background:#0a1022}
     .heart-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
     .heart{position:relative;width:140px;height:125px;cursor:pointer;transition:transform .06s ease}
     .heart:active{transform:scale(0.98)}
@@ -29,20 +34,25 @@
     .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
     @media (max-width:600px){.stats{grid-template-columns:1fr}}
     .stat{background:#0a1022;border:1px solid #1f2a44;padding:12px;border-radius:14px}
-    .stat .label{font-size:12px;color:#94a3b8} .stat .value{font-size:20px;font-weight:700}
-    table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:8px 10px;border-bottom:1px solid #141b33}
-    th{text-align:left;color:#93a1b3} tbody tr:hover{background:#0c1530}
+    .stat .label{font-size:12px;color:#94a3b8}
+    .stat .value{font-size:20px;font-weight:700}
+    .delta.pos{color:#22c55e}.delta.neg{color:#f87171}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{padding:8px 10px;border-bottom:1px solid #141b33}
+    th{text-align:left;color:#93a1b3}
+    tbody tr:hover{background:#0c1530}
     .footer{margin-top:12px;color:#9ca3af;font-size:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .footer button{font-size:12px;padding:6px 8px}
-    #debug{margin:10px 0 0;color:#fbbf24;font-size:12px}
+    #fail{display:none;margin-bottom:12px;padding:10px;border-radius:10px;background:#3b1d1d;color:#ffd4d4;border:1px solid #7a2e2e}
   </style>
 </head>
 <body>
   <div class="app">
+    <div id="fail">Script error detected. Running in safe mode without charts. You can still record and export readings.</div>
     <header>
       <div>
         <div class="title">Pet Respiratory Tracker</div>
-        <div class="sub">Tap the heart for each breath during a timed session. Saves BPM locally on this device.</div>
+        <div class="sub">Tap the heart for each breath during a timed session. Save BPM, see trends, and MoM/YoY stats. Data is saved locally.</div>
       </div>
       <div class="controls">
         <label class="pill">Range
@@ -82,11 +92,10 @@
             <span>Elapsed: <strong id="elapsed">0.0s</strong></span>
             <span>BPM (live): <strong id="bpmLive">0</strong></span>
           </div>
-          <div id="debug"></div>
         </div>
         <hr style="border-color:#141b33; margin:16px 0"/>
         <h3>Trend</h3>
-        <div style="color:#94a3b8;font-size:13px">Charts are temporarily disabled in this build to ensure counting works. We’ll re-enable after confirmation.</div>
+        <canvas id="chart" height="220" style="width:100%"></canvas>
       </section>
 
       <section class="card">
@@ -111,20 +120,23 @@
     </div>
   </div>
 
+  <!-- CDN with error handlers -->
+  <script>
+    function markFail(msg){ const f=document.getElementById('fail'); f.style.display='block'; if(msg) f.textContent='Safe mode: '+msg; }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer onerror="markFail('Chart library failed to load. Charts disabled.');"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0" defer onerror="markFail('Date adapter failed to load. Charts disabled.');"></script>
+
   <script>
     (function(){
-      var debug = document.getElementById('debug');
-      function log(msg){ debug.textContent = String(msg); }
-
       try{
-        // Storage
-        var STORE_KEY='pet_resp_readings_v1';
-        function load(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY))||[] } catch(e){ return [] } }
-        function save(a){ localStorage.setItem(STORE_KEY, JSON.stringify(a)); }
+        const STORE_KEY='pet_resp_readings_v1';
+        const load=function(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY))||[] } catch(e){ return [] } };
+        const save=function(a){ localStorage.setItem(STORE_KEY, JSON.stringify(a)); };
         var readings = load();
 
-        // Elements
-        function el(id){ return document.getElementById(id); }
+        var ticking=false, startTime=0, timerId=null, elapsed=0, count=0, sessLen=60;
+        var el=function(id){ return document.getElementById(id); };
         var heart=el('heart'), startBtn=el('startBtn'), stopBtn=el('stopBtn'), statusEl=el('status');
         var countEl=el('breathCount'), elapsedEl=el('elapsed'), bpmLiveEl=el('bpmLive');
         var rangeSel=el('rangeSelect');
@@ -133,148 +145,46 @@
         var exportBtn=el('exportBtn'), importBtn=el('importBtn'), importFile=el('importFile'), clearBtn=el('clearBtn');
         var logBody=document.querySelector('#logTable tbody');
 
-        // Session
-        var ticking=false, startTime=0, timerId=null, elapsed=0, count=0, sessLen=60;
-
         function resetSessionUI(){ count=0; elapsed=0; countEl.textContent='0'; elapsedEl.textContent='0.0s'; bpmLiveEl.textContent='0'; }
-        function updateLive(){
-          elapsed=(Date.now()-startTime)/1000;
-          var bpm=count*(60/Math.max(elapsed,0.1));
-          elapsedEl.textContent=elapsed.toFixed(1)+'s';
-          bpmLiveEl.textContent=String(Math.round(bpm));
-          if(elapsed>=sessLen){ stopAndSave(); }
-        }
-        function startSession(){
-          if(ticking) return;
-          sessLen=parseInt(document.getElementById('sessionLen').value,10);
-          resetSessionUI();
-          ticking=true; startTime=Date.now();
-          statusEl.textContent='Counting… ('+sessLen+'s)';
-          startBtn.disabled=true; stopBtn.disabled=false;
-          timerId=setInterval(updateLive, 100);
-          log('Session started');
-        }
-        function stopAndSave(){
-          if(!ticking) return;
-          clearInterval(timerId); ticking=false;
-          startBtn.disabled=false; stopBtn.disabled=true;
-          var duration=Math.max(elapsed,0.1);
-          var bpm=Math.round(count*(60/duration));
-          var entry={ ts:Date.now(), bpm:bpm };
-          readings.push(entry); save(readings);
-          statusEl.textContent='Saved '+bpm+' BPM';
-          rebuild();
-          log('Saved '+bpm+' BPM');
-        }
-
-        // Clicks
+        function updateLive(){ elapsed=(Date.now()-startTime)/1000; var bpm=count*(60/Math.max(elapsed,0.1)); elapsedEl.textContent=elapsed.toFixed(1)+'s'; bpmLiveEl.textContent=String(Math.round(bpm)); }
+        function startSession(){ if(ticking) return; sessLen=parseInt(document.getElementById('sessionLen').value,10); resetSessionUI(); ticking=true; startTime=Date.now(); statusEl.textContent='Counting… ('+sessLen+'s)'; startBtn.disabled=true; stopBtn.disabled=false; timerId=setInterval(function(){ updateLive(); if(elapsed>=sessLen) stopAndSave(); }, 100); }
+        function stopAndSave(){ if(!ticking) return; clearInterval(timerId); ticking=false; startBtn.disabled=false; stopBtn.disabled=true; var duration=Math.max(elapsed,0.1); var bpm=Math.round(count*(60/duration)); var entry={ ts:Date.now(), bpm:bpm }; readings.push(entry); save(readings); statusEl.textContent='Saved '+bpm+' BPM'; rebuild(); }
         heart.addEventListener('click', function(){ if(!ticking) return; count++; countEl.textContent=String(count); });
         startBtn.addEventListener('click', startSession);
         stopBtn.addEventListener('click', stopAndSave);
 
-        // Stats/Log (no charts in this build)
+        // Chart (lazy & guarded)
+        var chart=null; var ctx=null; var canvasEl=document.getElementById('chart');
+        if(canvasEl && canvasEl.getContext){ ctx = canvasEl.getContext('2d'); }
+        function ensureChart(){
+          if(!ctx || typeof window.Chart==='undefined' || chart){ return; }
+          chart=new Chart(ctx,{type:'line',data:{datasets:[{label:'BPM',data:[],tension:0.25,pointRadius:2,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{type:'time',time:{unit:'day'}},y:{beginAtZero:false}},plugins:{legend:{display:false}}});
+        }
+        // Retry until Chart.js arrives (because it is deferred)
+        var chartWait = setInterval(function(){ if(typeof window.Chart!=='undefined'){ ensureChart(); updateChart(); clearInterval(chartWait); } }, 300);
+
         function rangeStart(range){ var now=new Date(); var days={week:7,month:30,'3m':90,'6m':180,'1y':365,all:0}; if(range==='all') return new Date(0); return new Date(now.getTime()-days[range]*24*3600*1000); }
+        function updateChart(){ ensureChart(); if(!chart){ return; } var range=rangeSel.value; var start=rangeStart(range); var filtered=readings.filter(function(r){ return new Date(r.ts) >= start; }).sort(function(a,b){return a.ts-b.ts}); chart.data.datasets[0].data=filtered.map(function(r){ return {x:r.ts, y:r.bpm}; }); chart.update(); countRange.textContent=String(filtered.length); var first = filtered.length ? filtered[0].ts : undefined; var last = filtered.length ? filtered[filtered.length-1].ts : undefined; rangeSpan.textContent = filtered.length ? (fmtDate(first)+' → '+fmtDate(last)) : '—'; }
         function fmtDate(ts){ var d=new Date(ts); return d.toLocaleString([], {year:'numeric', month:'short', day:'2-digit'}); }
         function fmtTime(ts){ var d=new Date(ts); return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
-
-        function updateStats(){
-          if(readings.length===0){
-            latestBpm.textContent='—'; latestWhen.textContent='No readings yet';
-            mom.textContent='—'; momDelta.textContent=''; momBase.textContent='—';
-            yoy.textContent='—'; yoyDelta.textContent=''; yoyBase.textContent='—';
-            return;
-          }
-          var last = readings[readings.length-1];
-          latestBpm.textContent=String(last.bpm);
-          latestWhen.textContent=fmtDate(last.ts)+' '+fmtTime(last.ts);
-
-          var d=new Date(last.ts);
-          var curM=d.getMonth(), curY=d.getFullYear();
-          var prevM=(curM+11)%12, prevY=(curM===0)?(curY-1):curY;
-
-          function sel(y,m){ return readings.filter(function(r){ var t=new Date(r.ts); return t.getFullYear()===y && t.getMonth()===m; }); }
-          function avg(a){ return a.length ? (a.reduce(function(s,r){return s+r.bpm},0)/a.length) : null; }
-
-          var curA=sel(curY,curM), prevA=sel(prevY,prevM);
-          var curAvg=avg(curA), prevAvg=avg(prevA);
-          if(curAvg!=null && prevAvg!=null){
-            mom.textContent=curAvg.toFixed(1)+' BPM';
-            var delta=curAvg-prevAvg; var pct=(delta/prevAvg)*100;
-            momDelta.textContent=(delta>=0?'+':'')+delta.toFixed(1)+' ('+(pct>=0?'+':'')+pct.toFixed(1)+'%)';
-            momBase.textContent='Prev month avg: '+prevAvg.toFixed(1)+' BPM';
-          } else { mom.textContent='—'; momDelta.textContent=''; momBase.textContent='Need current & previous month data'; }
-
-          var lastY=curY-1; var same=avg(sel(lastY,curM));
-          if(curAvg!=null && same!=null){
-            yoy.textContent=curAvg.toFixed(1)+' BPM';
-            var d2=curAvg-same; var p2=(d2/same)*100;
-            yoyDelta.textContent=(d2>=0?'+':'')+d2.toFixed(1)+' ('+(p2>=0?'+':'')+p2.toFixed(1)+'%)';
-            yoyBase.textContent='Same month last year avg: '+same.toFixed(1)+' BPM';
-          } else { yoy.textContent='—'; yoyDelta.textContent=''; yoyBase.textContent='Need this month & same month last year'; }
+        function updateStats(){ if(readings.length===0){ latestBpm.textContent='—'; latestWhen.textContent='No readings yet'; mom.textContent='—'; momDelta.textContent=''; momBase.textContent='—'; yoy.textContent='—'; yoyDelta.textContent=''; yoyBase.textContent='—'; return; } var last = readings[readings.length-1]; latestBpm.textContent=String(last.bpm); latestWhen.textContent=fmtDate(last.ts)+' '+fmtTime(last.ts); var d=new Date(last.ts); var curM=d.getMonth(), curY=d.getFullYear(); var prevM=(curM+11)%12, prevY=(curM===0)?(curY-1):curY; var sel=function(y,m){ return readings.filter(function(r){ var t=new Date(r.ts); return t.getFullYear()===y && t.getMonth()===m; }); }; var avg=function(a){ return a.length ? (a.reduce(function(s,r){return s+r.bpm},0)/a.length) : null; }; var curA=sel(curY,curM), prevA=sel(prevY,prevM); var curAvg=avg(curA), prevAvg=avg(prevA); if(curAvg!=null && prevAvg!=null){ mom.textContent=curAvg.toFixed(1)+' BPM'; var delta=curAvg-prevAvg; var pct=(delta/prevAvg)*100; momDelta.textContent=(delta>=0?'+':'')+delta.toFixed(1)+' ('+(pct>=0?'+':'')+pct.toFixed(1)+'%)'; momDelta.className='delta ' + (delta>=0?'pos':'neg'); momBase.textContent='Prev month avg: '+prevAvg.toFixed(1)+' BPM'; } else { mom.textContent='—'; momDelta.textContent=''; momBase.textContent='Need current & previous month data'; }
+          var lastY=curY-1; var same=avg(sel(lastY,curM)); if(curAvg!=null && same!=null){ yoy.textContent=curAvg.toFixed(1)+' BPM'; var d2=curAvg-same; var p2=(d2/same)*100; yoyDelta.textContent=(d2>=0?'+':'')+d2.toFixed(1)+' ('+(p2>=0?'+':'')+p2.toFixed(1)+'%)'; yoyDelta.className='delta ' + (d2>=0?'pos':'neg'); yoyBase.textContent='Same month last year avg: '+same.toFixed(1)+' BPM'; } else { yoy.textContent='—'; yoyDelta.textContent=''; yoyBase.textContent='Need this month & same month last year'; }
         }
-
-        function renderLog(){
-          logBody.innerHTML='';
-          var clone = readings.slice().sort(function(a,b){return b.ts-a.ts});
-          for(var i=0;i<clone.length;i++){
-            var r=clone[i];
-            var tr=document.createElement('tr');
-            tr.innerHTML='<td>'+fmtDate(r.ts)+'</td><td>'+fmtTime(r.ts)+'</td><td><strong>'+r.bpm+'</strong></td><td><button class="secondary" data-ts="'+r.ts+'">Delete</button></td>';
-            logBody.appendChild(tr);
-          }
-          var btns = logBody.querySelectorAll('button');
-          for(var j=0;j<btns.length;j++){
-            btns[j].addEventListener('click', function(e){
-              var ts = Number(e.currentTarget.getAttribute('data-ts'));
-              readings = readings.filter(function(r){ return r.ts!==ts; });
-              save(readings); rebuild();
-            });
-          }
+        function renderLog(){ logBody.innerHTML=''; var clone = readings.slice().sort(function(a,b){return b.ts-a.ts}); for(var i=0;i<clone.length;i++){ var r=clone[i]; var tr=document.createElement('tr'); tr.innerHTML='<td>'+fmtDate(r.ts)+'</td><td>'+fmtTime(r.ts)+'</td><td><strong>'+r.bpm+'</strong></td><td><button class="secondary" data-ts="'+r.ts+'">Delete</button></td>'; logBody.appendChild(tr); }
+          var btns = logBody.querySelectorAll('button'); for(var j=0;j<btns.length;j++){ btns[j].addEventListener('click', function(e){ var ts = Number(e.currentTarget.getAttribute('data-ts')); readings = readings.filter(function(r){ return r.ts!==ts; }); save(readings); rebuild(); }); }
         }
-
-        function rebuild(){
-          // charts intentionally skipped in this build
-          // update count of readings in selected range
-          var start = rangeStart(rangeSel.value);
-          var filtered = readings.filter(function(r){ return new Date(r.ts) >= start; });
-          countRange.textContent = String(filtered.length);
-          var first = filtered.length ? filtered[0].ts : undefined;
-          var last  = filtered.length ? filtered[filtered.length-1].ts : undefined;
-          rangeSpan.textContent = filtered.length ? (fmtDate(first)+' → '+fmtDate(last)) : '—';
-          updateStats();
-          renderLog();
-        }
+        function rebuild(){ updateChart(); updateStats(); renderLog(); }
 
         // Import/Export/Clear
-        exportBtn.addEventListener('click', function(){
-          var blob=new Blob([JSON.stringify(readings,null,2)], {type:'application/json'});
-          var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-          a.download='pet-respiratory-readings.json'; a.click(); URL.revokeObjectURL(a.href);
-        });
+        exportBtn.addEventListener('click', function(){ var blob=new Blob([JSON.stringify(readings,null,2)], {type:'application/json'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='pet-respiratory-readings.json'; a.click(); URL.revokeObjectURL(a.href); });
         importBtn.addEventListener('click', function(){ importFile.click(); });
-        importFile.addEventListener('change', function(e){
-          var file = (e.target.files && e.target.files[0]) ? e.target.files[0] : null; if(!file) return;
-          var fr=new FileReader();
-          fr.onload=function(){
-            try{
-              var data=JSON.parse(fr.result);
-              if(Array.isArray(data) && data.every(function(x){ return typeof x.ts==='number' && typeof x.bpm==='number'; })){
-                readings=data.sort(function(a,b){return a.ts-b.ts}); save(readings); rebuild();
-              } else { alert('Invalid file format.'); }
-            } catch(err){ alert('Could not parse file.'); }
-            importFile.value='';
-          };
-          fr.readAsText(file);
-        });
+        importFile.addEventListener('change', function(e){ var file = (e.target.files && e.target.files[0]) ? e.target.files[0] : null; if(!file) return; var fr=new FileReader(); fr.onload=function(){ try{ var data=JSON.parse(fr.result); if(Array.isArray(data) && data.every(function(x){ return typeof x.ts==='number' && typeof x.bpm==='number'; })){ readings=data.sort(function(a,b){return a.ts-b.ts}); save(readings); rebuild(); } else { alert('Invalid file format.'); } } catch(err){ alert('Could not parse file.'); } importFile.value=''; }; fr.readAsText(file); });
         clearBtn.addEventListener('click', function(){ if(confirm('Delete all readings on this device?')){ readings=[]; save(readings); rebuild(); } });
-        rangeSel.addEventListener('change', rebuild);
+        rangeSel.addEventListener('change', updateChart);
 
         // Initial build
         rebuild();
-        log('Ready');
-      }catch(e){
-        log('Init error: '+e.message);
-      }
+      }catch(e){ console.error(e); markFail(e.message); }
     })();
   </script>
 </body>
