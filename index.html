@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pet Respiratory Tracker</title>
+  <meta name="description" content="Tap to count breaths, save BPM readings, visualize trends, and see MoM/YoY stats. Works offline as a PWA.">
+  <style>
+    :root{
+      --bg:#0b1020; --panel:#0f172a; --muted:#94a3b8; --text:#e5e7eb; --accent:#ef4444; --accent-2:#fca5a5;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Inter,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;align-items:center;justify-content:center;padding:16px}
+    .app{width:min(980px,100%);min-height:80vh;border-radius:20px;background:var(--panel);box-shadow:0 20px 60px #0008,inset 0 0 0 1px #ffffff12;padding:20px;border:1px solid #ffffff18}
+    header{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;justify-content:space-between}
+    .title{font-size:22px;font-weight:700}
+    .sub{color:var(--muted);font-size:13px}
+    .grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-top:16px}
+    @media (max-width:900px){.grid{grid-template-columns:1fr}}
+    .card{background:#0b1225;border-radius:16px;padding:16px;border:1px solid #1b2340}
+    .card h3{margin:0 0 10px 0;font-size:16px}
+    .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    select,button,input[type="number"],.pill{background:#0a1022;border:1px solid #223;color:#e5e7eb;padding:10px 12px;border-radius:12px;font-size:14px}
+    button{cursor:pointer}
+    button.primary{background:linear-gradient(180deg,#ef4444,#c02626);border:0;box-shadow:0 10px 24px #ef444433}
+    button.primary:active{transform:translateY(1px)}
+    button.secondary{background:#0a1022}
+    .heart-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
+    .heart{position:relative;width:140px;height:125px;cursor:pointer;transition:transform .06s ease}
+    .heart:active{transform:scale(0.98)}
+    .heart::before,.heart::after{content:"";position:absolute;left:70px;top:0;width:70px;height:110px;background:radial-gradient(120px 140px at 30% 20%, var(--accent-2), var(--accent));border-radius:70px 70px 0 0;transform:rotate(-45deg);transform-origin:0 100%;box-shadow:inset 0 0 0 2px #ffffff22}
+    .heart::after{left:0;transform:rotate(45deg);transform-origin:100% 100%}
+    .counter{font-variant-numeric:tabular-nums;font-size:16px;color:#f3f4f6;background:#0a1022;padding:8px 12px;border-radius:999px;border:1px solid #1f2a44;display:flex;gap:10px;align-items:center}
+    .badge{font-size:12px;color:#9CA3AF;background:#0a1022;padding:6px 10px;border:1px solid #1f2a44;border-radius:999px}
+    .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    @media (max-width:600px){.stats{grid-template-columns:1fr}}
+    .stat{background:#0a1022;border:1px solid #1f2a44;padding:12px;border-radius:14px}
+    .stat .label{font-size:12px;color:#94a3b8}
+    .stat .value{font-size:20px;font-weight:700}
+    .delta.pos{color:#22c55e}.delta.neg{color:#f87171}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{padding:8px 10px;border-bottom:1px solid #141b33}
+    th{text-align:left;color:#93a1b3}
+    tbody tr:hover{background:#0c1530}
+    .footer{margin-top:12px;color:#9ca3af;font-size:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .footer button{font-size:12px;padding:6px 8px}
+    #fail{display:none;margin-bottom:12px;padding:10px;border-radius:10px;background:#3b1d1d;color:#ffd4d4;border:1px solid #7a2e2e}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div id="fail">Script error detected. Running in safe mode without charts/service worker. You can still record and export readings.</div>
+    <header>
+      <div>
+        <div class="title">Pet Respiratory Tracker</div>
+        <div class="sub">Tap the heart for each breath during a timed session. Save BPM, see trends, and MoM/YoY stats. Data is saved locally.</div>
+      </div>
+      <div class="controls">
+        <label class="pill">Range
+          <select id="rangeSelect" style="margin-left:8px">
+            <option value="week">Last 7 days</option>
+            <option value="month" selected>Last 30 days</option>
+            <option value="3m">Last 3 months</option>
+            <option value="6m">Last 6 months</option>
+            <option value="1y">Last 12 months</option>
+            <option value="all">All time</option>
+          </select>
+        </label>
+        <button id="exportBtn" class="secondary" title="Download .json of your readings">Export</button>
+        <input id="importFile" type="file" accept="application/json" style="display:none" />
+        <button id="importBtn" class="secondary">Import</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <h3>Capture a Reading</h3>
+        <div class="controls" style="margin-bottom:8px">
+          <span class="badge">Session length</span>
+          <select id="sessionLen">
+            <option value="60" selected>60s</option>
+            <option value="30">30s</option>
+            <option value="15">15s</option>
+          </select>
+          <button id="startBtn" class="primary">Start Session</button>
+          <button id="stopBtn" class="secondary" disabled>Stop & Save</button>
+          <span id="status" class="badge">Idle</span>
+        </div>
+        <div class="heart-wrap">
+          <div id="heart" class="heart" title="Tap once per breath"></div>
+          <div class="counter">
+            <span>Breaths: <strong id="breathCount">0</strong></span>
+            <span>Elapsed: <strong id="elapsed">0.0s</strong></span>
+            <span>BPM (live): <strong id="bpmLive">0</strong></span>
+          </div>
+        </div>
+        <hr style="border-color:#141b33; margin:16px 0"/>
+        <h3>Trend</h3>
+        <canvas id="chart" height="220" style="width:100%"></canvas>
+      </section>
+
+      <section class="card">
+        <h3>Stats</h3>
+        <div class="stats" id="stats">
+          <div class="stat"><div class="label">Latest BPM</div><div class="value" id="latestBpm">—</div><div class="label" id="latestWhen">No readings yet</div></div>
+          <div class="stat"><div class="label">MoM (current vs previous month)</div><div class="value"><span id="mom">—</span> <span id="momDelta" class="delta"></span></div><div class="label" id="momBase">—</div></div>
+          <div class="stat"><div class="label">YoY (this month vs last year)</div><div class="value"><span id="yoy">—</span> <span id="yoyDelta" class="delta"></span></div><div class="label" id="yoyBase">—</div></div>
+          <div class="stat"><div class="label">Readings (selected range)</div><div class="value" id="countRange">0</div><div class="label" id="rangeSpan">—</div></div>
+        </div>
+        <hr style="border-color:#141b33; margin:16px 0"/>
+        <h3>Log</h3>
+        <div style="max-height:300px; overflow:auto; border:1px solid #141b33; border-radius:12px">
+          <table id="logTable"><thead><tr><th>Date</th><th>Time</th><th>BPM</th><th></th></tr></thead><tbody></tbody></table>
+        </div>
+      </section>
+    </div>
+
+    <div class="footer">
+      <span>Tip: Aim for 60s sessions for consistent BPM.</span>
+      <button id="clearBtn" class="secondary" style="margin-left:auto">Clear All Data</button>
+    </div>
+  </div>
+
+  <!-- CDN with error handlers -->
+  <script>
+    function markFail(msg){
+      const f=document.getElementById('fail'); f.style.display='block'; if(msg) f.textContent = 'Safe mode: '+msg;
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer onerror="markFail('Chart library failed to load. Charts disabled.');"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0" defer onerror="markFail('Date adapter failed to load. Charts disabled.');"></script>
+
+  <script>
+    // Wrap everything to avoid hard failure
+    (function(){
+      try{
+        const STORE_KEY='pet_resp_readings_v1';
+        const load=()=>{try{return JSON.parse(localStorage.getItem(STORE_KEY))||[]}catch{return[]}};
+        const save=(a)=>localStorage.setItem(STORE_KEY,JSON.stringify(a));
+        let readings=load();
+
+        let ticking=false,startTime=0,timerId=null,elapsed=0,count=0,sessLen=60;
+        const el=(id)=>document.getElementById(id);
+        const heart=el('heart'),startBtn=el('startBtn'),stopBtn=el('stopBtn'),statusEl=el('status');
+        const countEl=el('breathCount'),elapsedEl=el('elapsed'),bpmLiveEl=el('bpmLive');
+        const rangeSel=el('rangeSelect');
+        const latestBpm=el('latestBpm'),latestWhen=el('latestWhen'),mom=el('mom'),momDelta=el('momDelta'),momBase=el('momBase');
+        const yoy=el('yoy'),yoyDelta=el('yoyDelta'),yoyBase=el('yoyBase'),countRange=el('countRange'),rangeSpan=el('rangeSpan');
+        const exportBtn=el('exportBtn'),importBtn=el('importBtn'),importFile=el('importFile'),clearBtn=el('clearBtn');
+        const logBody=document.querySelector('#logTable tbody');
+
+        function resetSessionUI(){count=0;elapsed=0;countEl.textContent='0';elapsedEl.textContent='0.0s';bpmLiveEl.textContent='0'}
+        function updateLive(){elapsed=(Date.now()-startTime)/1000; const bpm=count*(60/Math.max(elapsed,0.1)); elapsedEl.textContent=`${elapsed.toFixed(1)}s`; bpmLiveEl.textContent=Math.round(bpm)}
+        function startSession(){if(ticking)return; sessLen=parseInt(document.getElementById('sessionLen').value,10); resetSessionUI(); ticking=true; startTime=Date.now(); statusEl.textContent=`Counting… (${sessLen}s)`; startBtn.disabled=true; stopBtn.disabled=false; timerId=setInterval(()=>{updateLive(); if(elapsed>=sessLen) stopAndSave();},100)}
+        function stopAndSave(){if(!ticking)return; clearInterval(timerId); ticking=false; startBtn.disabled=false; stopBtn.disabled=true; const duration=Math.max(elapsed,0.1); const bpm=Math.round(count*(60/duration)); const entry={ts:Date.now(),bpm}; readings.push(entry); save(readings); statusEl.textContent=`Saved ${bpm} BPM`; rebuild()}
+        heart.addEventListener('click',()=>{if(!ticking)return; count++; countEl.textContent=String(count)});
+        startBtn.addEventListener('click',startSession); stopBtn.addEventListener('click',stopAndSave);
+
+        // Chart (optional)
+        let chart=null; const ctx=document.getElementById('chart').getContext('2d');
+        function ensureChart(){
+          if(window.Chart && !chart){ chart=new Chart(ctx,{type:'line',data:{datasets:[{label:'BPM',data:[],tension:.25,pointRadius:2,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{type:'time',time:{unit:'day'},grid:{color:'#1f2a44'},ticks:{color:'#9ca3af'}},y:{beginAtZero:false,grid:{color:'#1f2a44'},ticks:{color:'#9ca3af'}}},plugins:{legend:{display:false}}}); }
+        }
+        function rangeStart(range){const now=new Date(); const map={week:7,month:30,'3m':90,'6m':180,'1y':365,all:0}; if(range==='all')return new Date(0); return new Date(now.getTime()-map[range]*24*3600*1000)}
+        function updateChart(){ ensureChart(); if(!chart){ return; } const range=rangeSel.value; const start=rangeStart(range); const filtered=readings.filter(r=>new Date(r.ts)>=start).sort((a,b)=>a.ts-b.ts); chart.data.datasets[0].data=filtered.map(r=>({x:r.ts,y:r.bpm})); chart.update(); countRange.textContent=String(filtered.length); const first=filtered[0]?.ts; const last=filtered.at(-1)?.ts; rangeSpan.textContent=filtered.length?`${fmtDate(first)} → ${fmtDate(last)}`:'—'}
+        function fmtDate(ts){const d=new Date(ts); return d.toLocaleString([], {year:'numeric', month:'short', day:'2-digit'})}
+        function fmtTime(ts){const d=new Date(ts); return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+        function updateStats(){ if(readings.length===0){ latestBpm.textContent='—'; latestWhen.textContent='No readings yet'; mom.textContent='—'; momDelta.textContent=''; momBase.textContent='—'; yoy.textContent='—'; yoyDelta.textContent=''; yoyBase.textContent='—'; return; } const last=readings.at(-1); latestBpm.textContent=`${last.bpm}`; latestWhen.textContent=`${fmtDate(last.ts)} ${fmtTime(last.ts)}`; const d=new Date(last.ts); const curM=d.getMonth(),curY=d.getFullYear(); const prevM=(curM+11)%12,prevY=curM===0?curY-1:curY; const sel=(y,m)=>readings.filter(r=>{const t=new Date(r.ts);return t.getFullYear()===y&&t.getMonth()===m}); const avg=a=>a.length?(a.reduce((s,r)=>s+r.bpm,0)/a.length):null; const curA=sel(curY,curM),prevA=sel(prevY,prevM); const curAvg=avg(curA),prevAvg=avg(prevA); if(curAvg!=null&&prevAvg!=null){ mom.textContent=`${curAvg.toFixed(1)} BPM`; const delta=curAvg-prevAvg; const pct=(delta/prevAvg)*100; momDelta.textContent=`${delta>=0?'+':''}${delta.toFixed(1)} (${pct>=0?'+':''}${pct.toFixed(1)}%)`; momDelta.className='delta ' + (delta>=0?'pos':'neg'); momBase.textContent=`Prev month avg: ${prevAvg.toFixed(1)} BPM`; } else { mom.textContent='—'; momDelta.textContent=''; momBase.textContent='Need current & previous month data'; }
+          const lastY=curY-1; const same=avg(sel(lastY,curM)); if(curAvg!=null&&same!=null){ yoy.textContent=`${curAvg.toFixed(1)} BPM`; const delta=curAvg-same; const pct=(delta/same)*100; yoyDelta.textContent=`${delta>=0?'+':''}${delta.toFixed(1)} (${pct>=0?'+':''}${pct.toFixed(1)}%)`; yoyDelta.className='delta ' + (delta>=0?'pos':'neg'); yoyBase.textContent=`Same month last year avg: ${same.toFixed(1)} BPM`; } else { yoy.textContent='—'; yoyDelta.textContent=''; yoyBase.textContent='Need this month & same month last year'; }
+        }
+        function renderLog(){ logBody.innerHTML=''; const clone=[...readings].sort((a,b)=>b.ts-a.ts); for(const r of clone){ const tr=document.createElement('tr'); tr.innerHTML=`<td>${fmtDate(r.ts)}</td><td>${fmtTime(r.ts)}</td><td><strong>${r.bpm}</strong></td><td><button class="secondary" data-ts="${r.ts}">Delete</button></td>`; logBody.appendChild(tr);} logBody.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',e=>{const ts=Number(e.currentTarget.getAttribute('data-ts')); readings=readings.filter(r=>r.ts!==ts); save(readings); rebuild();})) }
+        function rebuild(){ updateChart(); updateStats(); renderLog(); }
+
+        // Import/Export/Clear
+        exportBtn.addEventListener('click',()=>{ const blob=new Blob([JSON.stringify(readings,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='pet-respiratory-readings.json'; a.click(); URL.revokeObjectURL(a.href); });
+        importBtn.addEventListener('click',()=>importFile.click());
+        importFile.addEventListener('change',async(e)=>{const file=e.target.files?.[0]; if(!file)return; const text=await file.text(); try{const data=JSON.parse(text); if(Array.isArray(data)&&data.every(x=>typeof x.ts==='number'&&typeof x.bpm==='number')){ readings=data.sort((a,b)=>a.ts-b.ts); save(readings); rebuild(); } else alert('Invalid file format.'); }catch{ alert('Could not parse file.'); } importFile.value=''; });
+        clearBtn.addEventListener('click',()=>{ if(confirm('Delete all readings on this device?')){ readings=[]; save(readings); rebuild(); }});
+        rangeSel.addEventListener('change',updateChart);
+        rebuild();
+      }catch(e){ console.error(e); markFail(e.message); }
+    })();
+  </script>
+</body>
+</html>
