@@ -2,23 +2,42 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pet Respiratory Tracker — Post-Session Charts</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Pet Respiratory Tracker — iOS Safe Area + Post-Session Charts</title>
   <style>
     :root{ --bg:#0b1020; --panel:#0f172a; --muted:#94a3b8; --text:#e5e7eb; --accent:#ef4444; --accent-2:#fca5a5; --grid:#1f2a44; }
-    *{box-sizing:border-box} html,body{height:100%}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Inter,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;align-items:center;justify-content:center;padding:16px}
-    .app{width:min(980px,100%);min-height:80vh;border-radius:20px;background:var(--panel);box-shadow:0 20px 60px #0008,inset 0 0 0 1px #ffffff12;padding:20px;border:1px solid #ffffff18}
+    *{ box-sizing:border-box }
+    html, body { min-height:100svh; height:auto; }
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Inter,Roboto,Helvetica,Arial,sans-serif;
+      background:var(--bg); color:var(--text);
+      display:block;
+      padding: max(16px, env(safe-area-inset-top)) 16px 16px 16px;
+    }
+    .app{
+      width:min(980px,100%);
+      margin:0 auto;
+      background:var(--panel);
+      border-radius:20px;
+      box-shadow:0 20px 60px #0008, inset 0 0 0 1px #ffffff12;
+      border:1px solid #ffffff18;
+      padding:16px;
+      min-height: calc(100svh - max(16px, env(safe-area-inset-top)) - 16px);
+    }
     header{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;justify-content:space-between}
-    .title{font-size:22px;font-weight:700} .sub{color:var(--muted);font-size:13px}
+    .title{font-size:22px;font-weight:700}
+    .sub{color:var(--muted);font-size:13px}
     .grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-top:16px}
     @media (max-width:900px){.grid{grid-template-columns:1fr}}
     .card{background:#0b1225;border-radius:16px;padding:16px;border:1px solid #1b2340}
     .card h3{margin:0 0 10px 0;font-size:16px}
     .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
     select,button,.pill{background:#0a1022;border:1px solid #223;color:#e5e7eb;padding:10px 12px;border-radius:12px;font-size:14px}
-    button{cursor:pointer} button.primary{background:linear-gradient(180deg,#ef4444,#c02626);border:0;box-shadow:0 10px 24px #ef444433}
-    button.primary:active{transform:translateY(1px)} button.secondary{background:#0a1022}
+    button{cursor:pointer}
+    button.primary{background:linear-gradient(180deg,#ef4444,#c02626);border:0;box-shadow:0 10px 24px #ef444433}
+    button.primary:active{transform:translateY(1px)}
+    button.secondary{background:#0a1022}
     .heart-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
     .heart{position:relative;width:140px;height:125px;cursor:pointer;transition:transform .06s ease}
     .heart:active{transform:scale(0.98)}
@@ -29,9 +48,12 @@
     .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
     @media (max-width:600px){.stats{grid-template-columns:1fr}}
     .stat{background:#0a1022;border:1px solid var(--grid);padding:12px;border-radius:14px}
-    .stat .label{font-size:12px;color:#94a3b8} .stat .value{font-size:20px;font-weight:700}
-    table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:8px 10px;border-bottom:1px solid #141b33}
-    th{text-align:left;color:#93a1b3} tbody tr:hover{background:#0c1530}
+    .stat .label{font-size:12px;color:#94a3b8}
+    .stat .value{font-size:20px;font-weight:700}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{padding:8px 10px;border-bottom:1px solid #141b33}
+    th{text-align:left;color:#93a1b3}
+    tbody tr:hover{background:#0c1530}
     .footer{margin-top:12px;color:#9ca3af;font-size:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .footer button{font-size:12px;padding:6px 8px}
     #debug{margin:10px 0 0;color:#fbbf24;font-size:12px}
@@ -135,6 +157,23 @@
         var logBody=document.querySelector('#logTable tbody');
         var chartCanvas=el('chart');
 
+        // Canvas sizing (HiDPI + safe layout)
+        function resizeCanvas(){
+          if(!chartCanvas) return null;
+          var dpr = Math.max(1, window.devicePixelRatio || 1);
+          var rect = chartCanvas.getBoundingClientRect();
+          // Fallback sizes to avoid 0x0 when offscreen
+          var cssW = Math.max(320, Math.floor(rect.width  || chartCanvas.clientWidth  || 320));
+          var cssH = Math.max(200, Math.floor(rect.height || chartCanvas.clientHeight || 220));
+          chartCanvas.width  = cssW * dpr;
+          chartCanvas.height = cssH * dpr;
+          var ctx = chartCanvas.getContext('2d');
+          if(ctx) ctx.setTransform(dpr,0,0,dpr,0,0);
+          return ctx;
+        }
+        var ctx = resizeCanvas();
+        window.addEventListener('resize', function(){ ctx = resizeCanvas(); drawChart(); });
+
         // Session
         var ticking=false, startTime=0, timerId=null, elapsed=0, count=0, sessLen=60;
 
@@ -165,7 +204,7 @@
           var entry={ ts:Date.now(), bpm:bpm };
           readings.push(entry); save(readings);
           statusEl.textContent='Saved '+bpm+' BPM';
-          rebuild();
+          rebuild();               // chart updates only here
           log('Saved '+bpm+' BPM');
         }
 
@@ -208,7 +247,7 @@
           var f=getFiltered().sort(function(a,b){return a.ts-b.ts});
           countRange.textContent=String(f.length);
           var first=f.length?f[0].ts:undefined;
-          var last=f.length?f[f.length-1].ts:undefined;
+          var last =f.length?f[f.length-1].ts:undefined;
           rangeSpan.textContent=f.length?(fmtDate(first)+' → '+fmtDate(last)):'—';
         }
 
@@ -247,16 +286,12 @@
           } else { yoy.textContent='—'; yoyDelta.textContent=''; yoyBase.textContent='Need this month & same month last year'; }
         }
 
-        // Chart — draw only when rebuild() runs
+        // Chart (draw only after rebuild)
         function drawChart(){
           try{
-            var canvas = chartCanvas;
-            if(!canvas) return;
-            var ctx = canvas.getContext('2d'); if(!ctx) return;
-
-            // Size to current CSS box each time (prevents zero-size issues)
-            var w = canvas.clientWidth || 320, h = canvas.clientHeight || 220;
-            if(canvas.width !== w || canvas.height !== h){ canvas.width = w; canvas.height = h; }
+            ctx = resizeCanvas(); if(!ctx) return;
+            var w = chartCanvas.width / (window.devicePixelRatio||1);
+            var h = chartCanvas.height / (window.devicePixelRatio||1);
 
             // background
             ctx.fillStyle = '#0b1225'; ctx.fillRect(0,0,w,h);
@@ -323,7 +358,7 @@
           updateStats();
           updateRangeCount();
           renderLog();
-          drawChart();              // <- chart renders only here (post-session or range change)
+          drawChart();   // chart redraws only after Stop & Save or range change
         }
 
         // Initial build
