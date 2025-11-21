@@ -5,58 +5,202 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Pet Respiratory Tracker — Tap Heart to Start</title>
   <style>
-    :root{ --bg:#0b1020; --panel:#0f172a; --muted:#94a3b8; --text:#e5e7eb; --accent:#ef4444; --accent-2:#fca5a5; --grid:#1f2a44; --note:#0f1c36; --note-border:#27406f; }
+    :root{
+      --bg:#0b1020;
+      --panel:#0f172a;
+      --muted:#94a3b8;
+      --text:#e5e7eb;
+      --accent:#ef4444;
+      --accent-2:#fca5a5;
+      --grid:#1f2a44;
+      --note:#0f1c36;
+      --note-border:#27406f;
+    }
     *{ box-sizing:border-box }
     html, body { min-height:100svh; height:auto; }
     body{
-      margin:0; font-family:system-ui,-apple-system,Segoe UI,Inter,Roboto,Helvetica,Arial,sans-serif;
-      background:var(--bg); color:var(--text); display:block;
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Inter,Roboto,Helvetica,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      display:block;
       padding:max(16px, env(safe-area-inset-top)) 16px 16px 16px;
     }
     .app{
-      width:min(980px,100%); margin:0 auto; background:var(--panel); border-radius:20px;
-      box-shadow:0 20px 60px #0008, inset 0 0 0 1px #ffffff12; border:1px solid #ffffff18; padding:16px;
+      width:min(980px,100%);
+      margin:0 auto;
+      background:var(--panel);
+      border-radius:20px;
+      box-shadow:0 20px 60px #0008, inset 0 0 0 1px #ffffff12;
+      border:1px solid #ffffff18;
+      padding:16px;
       min-height:calc(100svh - max(16px, env(safe-area-inset-top)) - 16px);
     }
-    .instructions{display:flex;gap:12px;align-items:flex-start;background:var(--note);border:1px solid var(--note-border);border-radius:14px;padding:12px 14px;margin-bottom:14px}
-    .instructions .icon{width:28px;height:28px;border-radius:999px;background:radial-gradient(120px 140px at 30% 20%, var(--accent-2), var(--accent));box-shadow:0 0 0 2px #ffffff22;flex:0 0 28px}
+
+    .instructions{
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      background:var(--note);
+      border:1px solid var(--note-border);
+      border-radius:14px;
+      padding:12px 14px;
+      margin-bottom:14px;
+    }
+    .instructions .icon{
+      width:28px;
+      height:28px;
+      border-radius:999px;
+      background:radial-gradient(120px 140px at 30% 20%, var(--accent-2), var(--accent));
+      box-shadow:0 0 0 2px #ffffff22;
+      flex:0 0 28px;
+    }
     .instructions .text{font-size:14px;line-height:1.4}
     .instructions .text strong{font-size:15px}
-    header{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;justify-content:space-between}
+
+    header{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:flex-start;
+      gap:12px;
+      justify-content:space-between;
+    }
     .title{font-size:22px;font-weight:700}
-    .sub{color:var(--muted);font-size:13px}
-    .grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-top:16px}
+
+    .grid{
+      display:grid;
+      grid-template-columns:1.2fr 1fr;
+      gap:16px;
+      margin-top:16px;
+    }
     @media (max-width:900px){.grid{grid-template-columns:1fr}}
-    .card{background:#0b1225;border-radius:16px;padding:16px;border:1px solid #1b2340}
+    .card{
+      background:#0b1225;
+      border-radius:16px;
+      padding:16px;
+      border:1px solid #1b2340;
+    }
     .card h3{margin:0 0 10px 0;font-size:16px}
-    .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    select,button,.pill{background:#0a1022;border:1px solid #223;color:#e5e7eb;padding:10px 12px;border-radius:12px;font-size:14px}
+
+    .controls{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    select,button,.pill{
+      background:#0a1022;
+      border:1px solid #223;
+      color:#e5e7eb;
+      padding:10px 12px;
+      border-radius:12px;
+      font-size:14px;
+    }
     button{cursor:pointer}
-    button.primary{background:linear-gradient(180deg,#ef4444,#c02626);border:0;box-shadow:0 10px 24px #ef444433}
+    button.primary{
+      background:linear-gradient(180deg,#ef4444,#c02626);
+      border:0;
+      box-shadow:0 10px 24px #ef444433;
+    }
     button.primary:active{transform:translateY(1px)}
     button.secondary{background:#0a1022}
-    .heart-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
-    .heart{position:relative;width:140px;height:125px;cursor:pointer;transition:transform .06s ease;filter:drop-shadow(0 6px 14px rgba(239,68,68,.25))}
+
+    .heart-wrap{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:12px;
+    }
+    .heart{
+      position:relative;
+      width:140px;
+      height:125px;
+      cursor:pointer;
+      transition:transform .06s ease;
+      filter:drop-shadow(0 6px 14px rgba(239,68,68,.25));
+    }
     .heart:active{transform:scale(0.98)}
-    .heart::before,.heart::after{content:"";position:absolute;left:70px;top:0;width:70px;height:110px;background:radial-gradient(120px 140px at 30% 20%, var(--accent-2), var(--accent));border-radius:70px 70px 0 0;transform:rotate(-45deg);transform-origin:0 100%;box-shadow:inset 0 0 0 2px #ffffff22}
-    .heart::after{left:0;transform:rotate(45deg);transform-origin:100% 100%}
+    .heart::before,.heart::after{
+      content:"";
+      position:absolute;
+      left:70px;
+      top:0;
+      width:70px;
+      height:110px;
+      background:radial-gradient(120px 140px at 30% 20%, var(--accent-2), var(--accent));
+      border-radius:70px 70px 0 0;
+      transform:rotate(-45deg);
+      transform-origin:0 100%;
+      box-shadow:inset 0 0 0 2px #ffffff22;
+    }
+    .heart::after{
+      left:0;
+      transform:rotate(45deg);
+      transform-origin:100% 100%;
+    }
     @keyframes pulse {0%{transform:scale(1)}40%{transform:scale(1.06)}100%{transform:scale(1)}}
     .heart.pulse{animation:pulse .28s ease}
-    .counter{font-variant-numeric:tabular-nums;font-size:16px;color:#f3f4f6;background:#0a1022;padding:8px 12px;border-radius:999px;border:1px solid var(--grid);display:flex;gap:10px;align-items:center}
-    .badge{font-size:12px;color:#9CA3AF;background:#0a1022;padding:6px 10px;border:1px solid var(--grid);border-radius:999px}
-    .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+
+    .counter{
+      font-variant-numeric:tabular-nums;
+      font-size:16px;
+      color:#f3f4f6;
+      background:#0a1022;
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid var(--grid);
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .badge{
+      font-size:12px;
+      color:#9CA3AF;
+      background:#0a1022;
+      padding:6px 10px;
+      border:1px solid var(--grid);
+      border-radius:999px;
+    }
+
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:10px;
+    }
     @media (max-width:600px){.stats{grid-template-columns:1fr}}
-    .stat{background:#0a1022;border:1px solid var(--grid);padding:12px;border-radius:14px}
+    .stat{
+      background:#0a1022;
+      border:1px solid var(--grid);
+      padding:12px;
+      border-radius:14px;
+    }
     .stat .label{font-size:12px;color:#94a3b8}
     .stat .value{font-size:20px;font-weight:700}
+
     table{width:100%;border-collapse:collapse;font-size:13px}
     th,td{padding:8px 10px;border-bottom:1px solid #141b33}
     th{text-align:left;color:#93a1b3}
     tbody tr:hover{background:#0c1530}
-    .footer{margin-top:12px;color:#9ca3af;font-size:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+    .footer{
+      margin-top:12px;
+      color:#9ca3af;
+      font-size:12px;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
     .footer button{font-size:12px;padding:6px 8px}
     #debug{margin:10px 0 0;color:#fbbf24;font-size:12px}
-    canvas#chart{width:100%;height:220px;display:block;background:#091126;border-radius:12px;border:1px solid var(--grid)}
+    canvas#chart{
+      width:100%;
+      height:220px;
+      display:block;
+      background:#091126;
+      border-radius:12px;
+      border:1px solid var(--grid);
+    }
     .small-note{font-size:12px;color:#94a3b8;margin-top:6px}
   </style>
 </head>
@@ -72,7 +216,7 @@
     <header>
       <div>
         <div class="title">Pet Respiratory Tracker</div>
-        <div class="sub">Tap the heart each breath. Saves BPM locally. Chart updates after each saved session.</div>
+        <!-- Removed redundant subtext here -->
       </div>
       <div class="controls">
         <label class="pill">Range
@@ -123,15 +267,40 @@
       <section class="card">
         <h3>Stats</h3>
         <div class="stats" id="stats">
-          <div class="stat"><div class="label">Latest BPM</div><div class="value" id="latestBpm">—</div><div class="label" id="latestWhen">No readings yet</div></div>
-          <div class="stat"><div class="label">MoM (current vs previous month)</div><div class="value"><span id="mom">—</span> <span id="momDelta" class="delta"></span></div><div class="label" id="momBase">—</div></div>
-          <div class="stat"><div class="label">YoY (this month vs last year)</div><div class="value"><span id="yoy">—</span> <span id="yoyDelta" class="delta"></span></div><div class="label" id="yoyBase">—</div></div>
-          <div class="stat"><div class="label">Readings (selected range)</div><div class="value" id="countRange">0</div><div class="label" id="rangeSpan">—</div></div>
+          <div class="stat">
+            <div class="label">Latest BPM</div>
+            <div class="value" id="latestBpm">—</div>
+            <div class="label" id="latestWhen">No readings yet</div>
+          </div>
+          <div class="stat">
+            <div class="label">MoM (current vs previous month)</div>
+            <div class="value">
+              <span id="mom">—</span>
+              <span id="momDelta" class="delta"></span>
+            </div>
+            <div class="label" id="momBase">—</div>
+          </div>
+          <div class="stat">
+            <div class="label">YoY (this month vs last year)</div>
+            <div class="value">
+              <span id="yoy">—</span>
+              <span id="yoyDelta" class="delta"></span>
+            </div>
+            <div class="label" id="yoyBase">—</div>
+          </div>
+          <div class="stat">
+            <div class="label">Readings (selected range)</div>
+            <div class="value" id="countRange">0</div>
+            <div class="label" id="rangeSpan">—</div>
+          </div>
         </div>
         <hr style="border-color:#141b33; margin:16px 0"/>
         <h3>Log</h3>
         <div style="max-height:300px; overflow:auto; border:1px solid #141b33; border-radius:12px">
-          <table id="logTable"><thead><tr><th>Date</th><th>Time</th><th>BPM</th><th></th></tr></thead><tbody></tbody></table>
+          <table id="logTable">
+            <thead><tr><th>Date</th><th>Time</th><th>BPM</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
         </div>
       </section>
     </div>
@@ -163,6 +332,7 @@
         var logBody=document.querySelector('#logTable tbody');
         var chartCanvas=el('chart');
 
+        // Canvas sizing
         function resizeCanvas(){
           if(!chartCanvas) return null;
           var dpr = Math.max(1, window.devicePixelRatio || 1);
@@ -179,8 +349,16 @@
         window.addEventListener('resize', function(){ ctx = resizeCanvas(); drawChart(); });
 
         var ticking=false, startTime=0, timerId=null, elapsed=0, count=0, sessLen=60;
+        var cooldownUntil = 0; // ms timestamp; ignore heart taps while now < cooldownUntil
 
-        function resetSessionUI(){ count=0; elapsed=0; countEl.textContent='0'; elapsedEl.textContent='0.0s'; bpmLiveEl.textContent='0'; }
+        function resetSessionUI(){
+          count=0;
+          elapsed=0;
+          countEl.textContent='0';
+          elapsedEl.textContent='0.0s';
+          bpmLiveEl.textContent='0';
+        }
+
         function updateLive(){
           elapsed=(Date.now()-startTime)/1000;
           var bpm=count*(60/Math.max(elapsed,0.1));
@@ -188,82 +366,145 @@
           bpmLiveEl.textContent=String(Math.round(bpm));
           if(elapsed>=sessLen){ stopAndSave(); }
         }
+
         function startSession(){
           if(ticking) return;
+          // if still in cooldown, do not autostart via button
+          if(Date.now() < cooldownUntil){
+            log('Cooldown active; wait a moment before starting a new session.');
+            return;
+          }
           sessLen=parseInt(document.getElementById('sessionLen').value,10);
           resetSessionUI();
-          ticking=true; startTime=Date.now();
+          ticking=true;
+          cooldownUntil = 0; // clear cooldown on explicit start
+          startTime=Date.now();
           statusEl.textContent='Counting… ('+sessLen+'s)';
-          startBtn.disabled=true; stopBtn.disabled=false;
+          startBtn.disabled=true;
+          stopBtn.disabled=false;
           timerId=setInterval(updateLive, 100);
           log('Session started');
         }
+
         function stopAndSave(){
           if(!ticking) return;
-          clearInterval(timerId); ticking=false;
-          startBtn.disabled=false; stopBtn.disabled=true;
+          clearInterval(timerId);
+          ticking=false;
+          startBtn.disabled=false;
+          stopBtn.disabled=true;
+
           var duration=Math.max(elapsed,0.1);
           var bpm=Math.round(count*(60/duration));
           var entry={ ts:Date.now(), bpm:bpm };
-          readings.push(entry); save(readings);
+          readings.push(entry);
+          save(readings);
+
           statusEl.textContent='Saved '+bpm+' BPM';
+          // start 10s cooldown to prevent accidental restart via heart
+          cooldownUntil = Date.now() + 10_000;
           rebuild();
-          log('Saved '+bpm+' BPM');
+          log('Saved '+bpm+' BPM; cooldown 10s.');
         }
 
-        // Heart: start session on first tap, and count that tap
+        // Heart: obey cooldown, start session on first tap, count tap
         heart.addEventListener('click', function(){
-          if(!ticking){
-            startSession();              // start timer
+          var now = Date.now();
+          if(now < cooldownUntil){
+            // Ignore taps during cooldown
+            log('Cooldown active; ignoring tap.');
+            return;
           }
-          // count this tap (works both when starting or already running)
-          count++; countEl.textContent=String(count);
-          heart.classList.remove('pulse'); void heart.offsetWidth; heart.classList.add('pulse');
+          if(!ticking){
+            startSession(); // may bail if cooldown, but we checked already
+          }
+          if(!ticking) return; // just in case
+          count++;
+          countEl.textContent=String(count);
+          heart.classList.remove('pulse');
+          void heart.offsetWidth;
+          heart.classList.add('pulse');
         });
 
-        // Buttons still supported
+        // Buttons
         startBtn.addEventListener('click', startSession);
         stopBtn.addEventListener('click', stopAndSave);
 
+        // Range / CSV / Import / Clear
         rangeSel.addEventListener('change', function(){ rebuild(); });
+
         exportBtn.addEventListener('click', function(){
           var blob=new Blob([JSON.stringify(readings,null,2)], {type:'application/json'});
-          var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-          a.download='pet-respiratory-readings.json'; a.click(); URL.revokeObjectURL(a.href);
+          var a=document.createElement('a');
+          a.href=URL.createObjectURL(blob);
+          a.download='pet-respiratory-readings.json';
+          a.click();
+          URL.revokeObjectURL(a.href);
         });
+
         importBtn.addEventListener('click', function(){ importFile.click(); });
         importFile.addEventListener('change', function(e){
-          var file=(e.target.files&&e.target.files[0])?e.target.files[0]:null; if(!file) return;
+          var file=(e.target.files&&e.target.files[0])?e.target.files[0]:null;
+          if(!file) return;
           var fr=new FileReader();
           fr.onload=function(){
             try{
               var data=JSON.parse(fr.result);
               if(Array.isArray(data)&&data.every(function(x){return typeof x.ts==='number'&&typeof x.bpm==='number'})){
-                readings=data.sort(function(a,b){return a.ts-b.ts}); save(readings); rebuild();
-              } else { alert('Invalid file format.'); }
-            }catch(err){ alert('Could not parse file.'); }
+                readings=data.sort(function(a,b){return a.ts-b.ts});
+                save(readings);
+                rebuild();
+              } else {
+                alert('Invalid file format.');
+              }
+            }catch(err){
+              alert('Could not parse file.');
+            }
             importFile.value='';
           };
           fr.readAsText(file);
         });
-        clearBtn.addEventListener('click', function(){ if(confirm('Delete all readings on this device?')){ readings=[]; save(readings); rebuild(); } });
 
-        function rangeStart(range){ var now=new Date(); var days={week:7,month:30,'3m':90,'6m':180,'1y':365,all:0}; if(range==='all') return new Date(0); return new Date(now.getTime()-days[range]*24*3600*1000); }
-        function fmtDate(ts){ var d=new Date(ts); return d.toLocaleString([], {year:'numeric', month:'short', day:'2-digit'}); }
-        function fmtTime(ts){ var d=new Date(ts); return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
-        function getFiltered(){ var start=rangeStart(rangeSel.value); return readings.filter(function(r){ return new Date(r.ts) >= start; }); }
+        clearBtn.addEventListener('click', function(){
+          if(confirm('Delete all readings on this device?')){
+            readings=[];
+            save(readings);
+            rebuild();
+          }
+        });
+
+        // Helpers
+        function rangeStart(range){
+          var now=new Date();
+          var days={week:7,month:30,'3m':90,'6m':180,'1y':365,all:0};
+          if(range==='all') return new Date(0);
+          return new Date(now.getTime()-days[range]*24*3600*1000);
+        }
+        function fmtDate(ts){
+          var d=new Date(ts);
+          return d.toLocaleString([], {year:'numeric', month:'short', day:'2-digit'});
+        }
+        function fmtTime(ts){
+          var d=new Date(ts);
+          return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        }
+        function getFiltered(){
+          var start=rangeStart(rangeSel.value);
+          return readings.filter(function(r){ return new Date(r.ts) >= start; });
+        }
 
         function updateRangeCount(){
           var f=getFiltered().sort(function(a,b){return a.ts-b.ts});
           countRange.textContent=String(f.length);
           var first=f.length?f[0].ts:undefined;
-          var last =f.length?f[f.length-1].ts:undefined;
+          var last=f.length?f[f.length-1].ts:undefined;
           rangeSpan.textContent=f.length?(fmtDate(first)+' → '+fmtDate(last)):'—';
         }
 
+        // Stats
         function updateStats(){
           if(readings.length===0){
-            latestBpm.textContent='—'; latestWhen.textContent='No readings yet';
+            latestBpm.textContent='—';
+            latestWhen.textContent='No readings yet';
             mom.textContent='—'; momDelta.textContent=''; momBase.textContent='—';
             yoy.textContent='—'; yoyDelta.textContent=''; yoyBase.textContent='—';
             return;
@@ -275,84 +516,135 @@
           var d=new Date(last.ts), curM=d.getMonth(), curY=d.getFullYear();
           var prevM=(curM+11)%12, prevY=(curM===0)?(curY-1):curY;
 
-          function sel(y,m){ return readings.filter(function(r){ var t=new Date(r.ts); return t.getFullYear()===y && t.getMonth()===m; }); }
-          function avg(a){ return a.length?(a.reduce(function(s,r){return s+r.bpm},0)/a.length):null; }
+          function sel(y,m){
+            return readings.filter(function(r){
+              var t=new Date(r.ts);
+              return t.getFullYear()===y && t.getMonth()===m;
+            });
+          }
+          function avg(a){
+            return a.length?(a.reduce(function(s,r){return s+r.bpm},0)/a.length):null;
+          }
 
-          var curA=sel(curY,curM), prevA=sel(prevY,prevM); var curAvg=avg(curA), prevAvg=avg(prevA);
+          var curA=sel(curY,curM), prevA=sel(prevY,prevM);
+          var curAvg=avg(curA), prevAvg=avg(prevA);
+
           if(curAvg!=null && prevAvg!=null){
             mom.textContent=curAvg.toFixed(1)+' BPM';
-            var delta=curAvg-prevAvg; var pct=(delta/prevAvg)*100;
+            var delta=curAvg-prevAvg;
+            var pct=(delta/prevAvg)*100;
             momDelta.textContent=(delta>=0?'+':'')+delta.toFixed(1)+' ('+(pct>=0?'+':'')+pct.toFixed(1)+'%)';
             momBase.textContent='Prev month avg: '+prevAvg.toFixed(1)+' BPM';
-          } else { mom.textContent='—'; momDelta.textContent=''; momBase.textContent='Need current & previous month data'; }
+          } else {
+            mom.textContent='—'; momDelta.textContent=''; momBase.textContent='Need current & previous month data';
+          }
 
-          var lastY=curY-1; var same=avg(sel(lastY,curM));
+          var lastY=curY-1;
+          var same=avg(sel(lastY,curM));
           if(curAvg!=null && same!=null){
             yoy.textContent=curAvg.toFixed(1)+' BPM';
-            var d2=curAvg-same; var p2=(d2/same)*100;
+            var d2=curAvg-same;
+            var p2=(d2/same)*100;
             yoyDelta.textContent=(d2>=0?'+':'')+d2.toFixed(1)+' ('+(p2>=0?'+':'')+p2.toFixed(1)+'%)';
             yoyBase.textContent='Same month last year avg: '+same.toFixed(1)+' BPM';
-          } else { yoy.textContent='—'; yoyDelta.textContent=''; yoyBase.textContent='Need this month & same month last year'; }
+          } else {
+            yoy.textContent='—'; yoyDelta.textContent=''; yoyBase.textContent='Need this month & same month last year';
+          }
         }
 
+        // Chart
         function drawChart(){
           try{
-            ctx = resizeCanvas(); if(!ctx) return;
+            ctx = resizeCanvas();
+            if(!ctx) return;
             var w = chartCanvas.width / (window.devicePixelRatio||1);
             var h = chartCanvas.height / (window.devicePixelRatio||1);
 
-            ctx.fillStyle = '#0b1225'; ctx.fillRect(0,0,w,h);
+            ctx.fillStyle = '#0b1225';
+            ctx.fillRect(0,0,w,h);
 
             var padL=46, padR=12, padT=10, padB=22;
             var plotW = Math.max(10, w - padL - padR);
             var plotH = Math.max(10, h - padT - padB);
 
             ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--grid') || '#1f2a44';
-            ctx.lineWidth = 1; ctx.beginPath();
-            for(var gy=0; gy<=4; gy++){ var y = padT + (plotH*gy/4); ctx.moveTo(padL, y); ctx.lineTo(w-padR, y); }
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(var gy=0; gy<=4; gy++){
+              var y = padT + (plotH*gy/4);
+              ctx.moveTo(padL, y);
+              ctx.lineTo(w-padR, y);
+            }
             ctx.stroke();
 
             var data = getFiltered().sort(function(a,b){return a.ts-b.ts});
-            ctx.fillStyle='#94a3b8'; ctx.font='12px system-ui';
+            ctx.fillStyle='#94a3b8';
+            ctx.font='12px system-ui';
+
             if(data.length===0){
               ctx.fillText('No data in selected range', padL+8, padT+16);
               return;
             }
 
-            var t0=data[0].ts, t1=data[data.length-1].ts; if(t1===t0){ t1=t0+1000; }
-            function xOf(ts){ return padL + ( (ts - t0) / (t1 - t0) ) * plotW; }
+            var t0=data[0].ts, t1=data[data.length-1].ts;
+            if(t1===t0){ t1=t0+1000; }
+            function xOf(ts){ return padL + ((ts - t0) / (t1 - t0)) * plotW; }
 
             var min = data.reduce(function(m,r){return Math.min(m,r.bpm)}, data[0].bpm);
             var max = data.reduce(function(m,r){return Math.max(m,r.bpm)}, data[0].bpm);
             if(min===max){ min = Math.max(0, min-5); max = max+5; }
             function yOf(v){ return padT + (1 - (v - min)/(max - min)) * plotH; }
 
-            for(var i=0;i<=4;i++){ var vy=min+(i*(max-min)/4); var y=yOf(vy); ctx.fillText(Math.round(vy), 8, y+4); }
+            for(var i=0;i<=4;i++){
+              var vy=min+(i*(max-min)/4);
+              var y=yOf(vy);
+              ctx.fillText(Math.round(vy), 8, y+4);
+            }
 
             if(data.length===1){
               var px=xOf(data[0].ts), py=yOf(data[0].bpm);
-              ctx.fillText(new Date(data[0].ts).toLocaleDateString(undefined,{month:'short',day:'numeric'}), px-18, h-6);
-              ctx.fillStyle='#fca5a5'; ctx.beginPath(); ctx.arc(px,py,3,0,Math.PI*2); ctx.fill();
-              ctx.strokeStyle='#ef4444'; ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,py); ctx.stroke();
-              ctx.fillStyle='#9ca3af'; ctx.fillText('Only one reading—add more for a trend', padL+8, padT+32);
+              ctx.fillText(
+                new Date(data[0].ts).toLocaleDateString(undefined,{month:'short',day:'numeric'}),
+                px-18,
+                h-6
+              );
+              ctx.fillStyle='#fca5a5';
+              ctx.beginPath(); ctx.arc(px,py,3,0,Math.PI*2); ctx.fill();
+              ctx.strokeStyle='#ef4444';
+              ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,py); ctx.stroke();
+              ctx.fillStyle='#9ca3af';
+              ctx.fillText('Only one reading—add more for a trend', padL+8, padT+32);
               return;
             }
 
             var tickCount=Math.min(6, data.length);
             for(var j=0;j<tickCount;j++){
               var idx=Math.round(j*(data.length-1)/(tickCount-1));
-              var ts=data[idx].ts; var x=xOf(ts);
+              var ts=data[idx].ts;
+              var x=xOf(ts);
               var dd=new Date(ts).toLocaleDateString(undefined,{month:'short',day:'numeric'});
               ctx.fillText(dd, x-18, h-6);
             }
 
-            ctx.strokeStyle = '#ef4444'; ctx.lineWidth=2; ctx.beginPath();
-            for(var k=0;k<data.length;k++){ var px=xOf(data[k].ts), py=yOf(data[k].bpm); if(k===0) ctx.moveTo(px,py); else ctx.lineTo(px,py); }
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth=2;
+            ctx.beginPath();
+            for(var k=0;k<data.length;k++){
+              var px2=xOf(data[k].ts), py2=yOf(data[k].bpm);
+              if(k===0) ctx.moveTo(px2,py2); else ctx.lineTo(px2,py2);
+            }
             ctx.stroke();
 
             ctx.fillStyle='#fca5a5';
-            for(var m=0;m<data.length;m++){ var qx=xOf(data[m].ts), qy=yOf(data[m].bpm); ctx.beginPath(); ctx.arc(qx,qy,2.5,0,Math.PI*2); ctx.fill(); }
-          } catch(e){ log('Chart error: '+e.message); }
+            for(var m=0;m<data.length;m++){
+              var qx=xOf(data[m].ts), qy=yOf(data[m].bpm);
+              ctx.beginPath();
+              ctx.arc(qx,qy,2.5,0,Math.PI*2);
+              ctx.fill();
+            }
+          } catch(e){
+            log('Chart error: '+e.message);
+          }
         }
 
         function renderLog(){
@@ -369,22 +661,15 @@
             btns[j].addEventListener('click', function(e){
               var ts = Number(e.currentTarget.getAttribute('data-ts'));
               readings = readings.filter(function(r){ return r.ts!==ts; });
-              save(readings); rebuild();
+              save(readings);
+              rebuild();
             });
           }
         }
 
-        function rangeStart(range){ var now=new Date(); var days={week:7,month:30,'3m':90,'6m':180,'1y':365,all:0}; if(range==='all') return new Date(0); return new Date(now.getTime()-days[range]*24*3600*1000); }
-        function fmtDate(ts){ var d=new Date(ts); return d.toLocaleString([], {year:'numeric', month:'short', day:'2-digit'}); }
-        function fmtTime(ts){ var d=new Date(ts); return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
-        function getFiltered(){ var start=rangeStart(rangeSel.value); return readings.filter(function(r){ return new Date(r.ts) >= start; }); }
-
         function rebuild(){
           updateStats();
-          var f=getFiltered().sort(function(a,b){return a.ts-b.ts});
-          countRange.textContent=String(f.length);
-          var first=f.length?f[0].ts:undefined; var last=f.length?f[f.length-1].ts:undefined;
-          rangeSpan.textContent=f.length?(fmtDate(first)+' → '+fmtDate(last)):'—';
+          updateRangeCount();
           renderLog();
           drawChart();
         }
