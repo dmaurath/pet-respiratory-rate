@@ -3,47 +3,25 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Pet Respiratory Tracker — iOS Safe Area + Post-Session Charts</title>
+  <title>Pet Respiratory Tracker — Tap Heart to Start</title>
   <style>
     :root{ --bg:#0b1020; --panel:#0f172a; --muted:#94a3b8; --text:#e5e7eb; --accent:#ef4444; --accent-2:#fca5a5; --grid:#1f2a44; --note:#0f1c36; --note-border:#27406f; }
     *{ box-sizing:border-box }
     html, body { min-height:100svh; height:auto; }
     body{
-      margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Inter,Roboto,Helvetica,Arial,sans-serif;
-      background:var(--bg); color:var(--text);
-      display:block;
-      padding: max(16px, env(safe-area-inset-top)) 16px 16px 16px;
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Inter,Roboto,Helvetica,Arial,sans-serif;
+      background:var(--bg); color:var(--text); display:block;
+      padding:max(16px, env(safe-area-inset-top)) 16px 16px 16px;
     }
     .app{
-      width:min(980px,100%);
-      margin:0 auto;
-      background:var(--panel);
-      border-radius:20px;
-      box-shadow:0 20px 60px #0008, inset 0 0 0 1px #ffffff12;
-      border:1px solid #ffffff18;
-      padding:16px;
-      min-height: calc(100svh - max(16px, env(safe-area-inset-top)) - 16px);
+      width:min(980px,100%); margin:0 auto; background:var(--panel); border-radius:20px;
+      box-shadow:0 20px 60px #0008, inset 0 0 0 1px #ffffff12; border:1px solid #ffffff18; padding:16px;
+      min-height:calc(100svh - max(16px, env(safe-area-inset-top)) - 16px);
     }
-
-    /* Instruction banner */
-    .instructions{
-      display:flex; gap:12px; align-items:flex-start;
-      background:var(--note);
-      border:1px solid var(--note-border);
-      border-radius:14px;
-      padding:12px 14px;
-      margin-bottom:14px;
-    }
-    .instructions .icon{
-      width:28px; height:28px; border-radius:999px;
-      background:radial-gradient(120px 140px at 30% 20%, var(--accent-2), var(--accent));
-      box-shadow:0 0 0 2px #ffffff22;
-      flex:0 0 28px;
-    }
-    .instructions .text{ font-size:14px; line-height:1.4 }
-    .instructions .text strong{ font-size:15px }
-
+    .instructions{display:flex;gap:12px;align-items:flex-start;background:var(--note);border:1px solid var(--note-border);border-radius:14px;padding:12px 14px;margin-bottom:14px}
+    .instructions .icon{width:28px;height:28px;border-radius:999px;background:radial-gradient(120px 140px at 30% 20%, var(--accent-2), var(--accent));box-shadow:0 0 0 2px #ffffff22;flex:0 0 28px}
+    .instructions .text{font-size:14px;line-height:1.4}
+    .instructions .text strong{font-size:15px}
     header{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;justify-content:space-between}
     .title{font-size:22px;font-weight:700}
     .sub{color:var(--muted);font-size:13px}
@@ -57,25 +35,13 @@
     button.primary{background:linear-gradient(180deg,#ef4444,#c02626);border:0;box-shadow:0 10px 24px #ef444433}
     button.primary:active{transform:translateY(1px)}
     button.secondary{background:#0a1022}
-
     .heart-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
-    .heart{
-      position:relative;width:140px;height:125px;cursor:pointer;transition:transform .06s ease;
-      filter: drop-shadow(0 6px 14px rgba(239,68,68,.25));
-    }
+    .heart{position:relative;width:140px;height:125px;cursor:pointer;transition:transform .06s ease;filter:drop-shadow(0 6px 14px rgba(239,68,68,.25))}
     .heart:active{transform:scale(0.98)}
-    .heart::before,.heart::after{
-      content:"";position:absolute;left:70px;top:0;width:70px;height:110px;
-      background:radial-gradient(120px 140px at 30% 20%, var(--accent-2), var(--accent));
-      border-radius:70px 70px 0 0;transform:rotate(-45deg);transform-origin:0 100%;
-      box-shadow:inset 0 0 0 2px #ffffff22
-    }
+    .heart::before,.heart::after{content:"";position:absolute;left:70px;top:0;width:70px;height:110px;background:radial-gradient(120px 140px at 30% 20%, var(--accent-2), var(--accent));border-radius:70px 70px 0 0;transform:rotate(-45deg);transform-origin:0 100%;box-shadow:inset 0 0 0 2px #ffffff22}
     .heart::after{left:0;transform:rotate(45deg);transform-origin:100% 100%}
-
-    /* Subtle tap animation */
-    @keyframes pulse { 0%{transform:scale(1)} 40%{transform:scale(1.06)} 100%{transform:scale(1)} }
-    .heart.pulse{ animation: pulse .28s ease }
-
+    @keyframes pulse {0%{transform:scale(1)}40%{transform:scale(1.06)}100%{transform:scale(1)}}
+    .heart.pulse{animation:pulse .28s ease}
     .counter{font-variant-numeric:tabular-nums;font-size:16px;color:#f3f4f6;background:#0a1022;padding:8px 12px;border-radius:999px;border:1px solid var(--grid);display:flex;gap:10px;align-items:center}
     .badge{font-size:12px;color:#9CA3AF;background:#0a1022;padding:6px 10px;border:1px solid var(--grid);border-radius:999px}
     .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
@@ -96,11 +62,10 @@
 </head>
 <body>
   <div class="app">
-    <!-- Prominent instructions -->
     <div class="instructions" role="status" aria-live="polite">
       <div class="icon" aria-hidden="true"></div>
       <div class="text">
-        <strong>How to record a reading:</strong> Tap <em>Start Session</em>, then tap the heart <em>once per breath</em>. When the timer finishes (or you tap <em>Stop &amp; Save</em>), a BPM reading is saved. Use <em>Export</em> to back up your history.
+        <strong>How to record a reading:</strong> Tap the <em>heart</em> to start, then tap once per breath. Tap <em>Stop &amp; Save</em> (or wait for the timer) to store a BPM. Use <em>Export</em> to back up your history.
       </div>
     </div>
 
@@ -183,13 +148,11 @@
       function log(msg){ debug.textContent = String(msg); }
 
       try{
-        // Storage
         var STORE_KEY='pet_resp_readings_v1';
         function load(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY))||[] } catch(e){ return [] } }
         function save(a){ localStorage.setItem(STORE_KEY, JSON.stringify(a)); }
         var readings = load();
 
-        // Elements
         function el(id){ return document.getElementById(id); }
         var heart=el('heart'), startBtn=el('startBtn'), stopBtn=el('stopBtn'), statusEl=el('status');
         var countEl=el('breathCount'), elapsedEl=el('elapsed'), bpmLiveEl=el('bpmLive');
@@ -200,12 +163,10 @@
         var logBody=document.querySelector('#logTable tbody');
         var chartCanvas=el('chart');
 
-        // Canvas sizing (HiDPI + safe layout)
         function resizeCanvas(){
           if(!chartCanvas) return null;
           var dpr = Math.max(1, window.devicePixelRatio || 1);
           var rect = chartCanvas.getBoundingClientRect();
-          // Fallback sizes to avoid 0x0 when offscreen
           var cssW = Math.max(320, Math.floor(rect.width  || chartCanvas.clientWidth  || 320));
           var cssH = Math.max(200, Math.floor(rect.height || chartCanvas.clientHeight || 220));
           chartCanvas.width  = cssW * dpr;
@@ -217,7 +178,6 @@
         var ctx = resizeCanvas();
         window.addEventListener('resize', function(){ ctx = resizeCanvas(); drawChart(); });
 
-        // Session
         var ticking=false, startTime=0, timerId=null, elapsed=0, count=0, sessLen=60;
 
         function resetSessionUI(){ count=0; elapsed=0; countEl.textContent='0'; elapsedEl.textContent='0.0s'; bpmLiveEl.textContent='0'; }
@@ -247,23 +207,24 @@
           var entry={ ts:Date.now(), bpm:bpm };
           readings.push(entry); save(readings);
           statusEl.textContent='Saved '+bpm+' BPM';
-          rebuild();               // chart updates only here
+          rebuild();
           log('Saved '+bpm+' BPM');
         }
 
-        // Clicks + subtle pulse
+        // Heart: start session on first tap, and count that tap
         heart.addEventListener('click', function(){
-          if(!ticking) return;
+          if(!ticking){
+            startSession();              // start timer
+          }
+          // count this tap (works both when starting or already running)
           count++; countEl.textContent=String(count);
-          heart.classList.remove('pulse');
-          // force reflow to restart animation
-          void heart.offsetWidth;
-          heart.classList.add('pulse');
+          heart.classList.remove('pulse'); void heart.offsetWidth; heart.classList.add('pulse');
         });
+
+        // Buttons still supported
         startBtn.addEventListener('click', startSession);
         stopBtn.addEventListener('click', stopAndSave);
 
-        // Range / CSV / Import / Clear
         rangeSel.addEventListener('change', function(){ rebuild(); });
         exportBtn.addEventListener('click', function(){
           var blob=new Blob([JSON.stringify(readings,null,2)], {type:'application/json'});
@@ -287,7 +248,6 @@
         });
         clearBtn.addEventListener('click', function(){ if(confirm('Delete all readings on this device?')){ readings=[]; save(readings); rebuild(); } });
 
-        // Helpers
         function rangeStart(range){ var now=new Date(); var days={week:7,month:30,'3m':90,'6m':180,'1y':365,all:0}; if(range==='all') return new Date(0); return new Date(now.getTime()-days[range]*24*3600*1000); }
         function fmtDate(ts){ var d=new Date(ts); return d.toLocaleString([], {year:'numeric', month:'short', day:'2-digit'}); }
         function fmtTime(ts){ var d=new Date(ts); return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
@@ -301,7 +261,6 @@
           rangeSpan.textContent=f.length?(fmtDate(first)+' → '+fmtDate(last)):'—';
         }
 
-        // Stats
         function updateStats(){
           if(readings.length===0){
             latestBpm.textContent='—'; latestWhen.textContent='No readings yet';
@@ -336,21 +295,18 @@
           } else { yoy.textContent='—'; yoyDelta.textContent=''; yoyBase.textContent='Need this month & same month last year'; }
         }
 
-        // Chart (post-session only) — safe for 0 or 1 reading
         function drawChart(){
           try{
             ctx = resizeCanvas(); if(!ctx) return;
             var w = chartCanvas.width / (window.devicePixelRatio||1);
             var h = chartCanvas.height / (window.devicePixelRatio||1);
 
-            // background
             ctx.fillStyle = '#0b1225'; ctx.fillRect(0,0,w,h);
 
             var padL=46, padR=12, padT=10, padB=22;
             var plotW = Math.max(10, w - padL - padR);
             var plotH = Math.max(10, h - padT - padB);
 
-            // grid
             ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--grid') || '#1f2a44';
             ctx.lineWidth = 1; ctx.beginPath();
             for(var gy=0; gy<=4; gy++){ var y = padT + (plotH*gy/4); ctx.moveTo(padL, y); ctx.lineTo(w-padR, y); }
@@ -363,20 +319,17 @@
               return;
             }
 
-            // x scale
             var t0=data[0].ts, t1=data[data.length-1].ts; if(t1===t0){ t1=t0+1000; }
             function xOf(ts){ return padL + ( (ts - t0) / (t1 - t0) ) * plotW; }
-            // y scale
+
             var min = data.reduce(function(m,r){return Math.min(m,r.bpm)}, data[0].bpm);
             var max = data.reduce(function(m,r){return Math.max(m,r.bpm)}, data[0].bpm);
             if(min===max){ min = Math.max(0, min-5); max = max+5; }
             function yOf(v){ return padT + (1 - (v - min)/(max - min)) * plotH; }
 
-            // y labels
             for(var i=0;i<=4;i++){ var vy=min+(i*(max-min)/4); var y=yOf(vy); ctx.fillText(Math.round(vy), 8, y+4); }
 
             if(data.length===1){
-              // Single point: draw point + label, skip ticks that index into [1..n-1]
               var px=xOf(data[0].ts), py=yOf(data[0].bpm);
               ctx.fillText(new Date(data[0].ts).toLocaleDateString(undefined,{month:'short',day:'numeric'}), px-18, h-6);
               ctx.fillStyle='#fca5a5'; ctx.beginPath(); ctx.arc(px,py,3,0,Math.PI*2); ctx.fill();
@@ -385,7 +338,6 @@
               return;
             }
 
-            // x labels for 2+ points
             var tickCount=Math.min(6, data.length);
             for(var j=0;j<tickCount;j++){
               var idx=Math.round(j*(data.length-1)/(tickCount-1));
@@ -394,11 +346,10 @@
               ctx.fillText(dd, x-18, h-6);
             }
 
-            // line
             ctx.strokeStyle = '#ef4444'; ctx.lineWidth=2; ctx.beginPath();
             for(var k=0;k<data.length;k++){ var px=xOf(data[k].ts), py=yOf(data[k].bpm); if(k===0) ctx.moveTo(px,py); else ctx.lineTo(px,py); }
             ctx.stroke();
-            // points
+
             ctx.fillStyle='#fca5a5';
             for(var m=0;m<data.length;m++){ var qx=xOf(data[m].ts), qy=yOf(data[m].bpm); ctx.beginPath(); ctx.arc(qx,qy,2.5,0,Math.PI*2); ctx.fill(); }
           } catch(e){ log('Chart error: '+e.message); }
@@ -423,14 +374,21 @@
           }
         }
 
+        function rangeStart(range){ var now=new Date(); var days={week:7,month:30,'3m':90,'6m':180,'1y':365,all:0}; if(range==='all') return new Date(0); return new Date(now.getTime()-days[range]*24*3600*1000); }
+        function fmtDate(ts){ var d=new Date(ts); return d.toLocaleString([], {year:'numeric', month:'short', day:'2-digit'}); }
+        function fmtTime(ts){ var d=new Date(ts); return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
+        function getFiltered(){ var start=rangeStart(rangeSel.value); return readings.filter(function(r){ return new Date(r.ts) >= start; }); }
+
         function rebuild(){
           updateStats();
-          updateRangeCount();
+          var f=getFiltered().sort(function(a,b){return a.ts-b.ts});
+          countRange.textContent=String(f.length);
+          var first=f.length?f[0].ts:undefined; var last=f.length?f[f.length-1].ts:undefined;
+          rangeSpan.textContent=f.length?(fmtDate(first)+' → '+fmtDate(last)):'—';
           renderLog();
-          drawChart();   // chart redraws only after Stop & Save or range change
+          drawChart();
         }
 
-        // Initial build
         rebuild();
         log('Ready');
       }catch(e){
